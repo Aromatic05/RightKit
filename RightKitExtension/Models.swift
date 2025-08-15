@@ -72,10 +72,12 @@ class MenuAction: NSObject, NSCoding {
 enum ActionType: String, Codable {
     case createEmptyFile
     case createFileFromTemplate
+    case createFolder
     // 未来拓展...
     case copyFilePath
     case cutFile
     case runShellScript
+    case openTerminal
 }
 
 /// 菜单配置根结构
