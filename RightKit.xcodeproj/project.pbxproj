@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		2878AE8A2E4F386C009E9207 /* RightKitExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 2878AE822E4F386C009E9207 /* RightKitExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		2878AE932E4F3A98009E9207 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 2878AE922E4F3A98009E9207 /* README.md */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -37,6 +38,7 @@
 /* Begin PBXFileReference section */
 		2878AE6F2E4F3824009E9207 /* RightKit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RightKit.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		2878AE822E4F386C009E9207 /* RightKitExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RightKitExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		2878AE922E4F3A98009E9207 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -86,6 +88,7 @@
 		2878AE662E4F3824009E9207 = {
 			isa = PBXGroup;
 			children = (
+				2878AE922E4F3A98009E9207 /* README.md */,
 				2878AE712E4F3824009E9207 /* RightKit */,
 				2878AE832E4F386C009E9207 /* RightKitExtension */,
 				2878AE702E4F3824009E9207 /* Products */,
@@ -193,6 +196,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2878AE932E4F3A98009E9207 /* README.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

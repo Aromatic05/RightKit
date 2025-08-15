@@ -10,75 +10,42 @@ import FinderSync
 
 class FinderSync: FIFinderSync {
 
-    var myFolderURL = URL(fileURLWithPath: "/Users/Shared/MySyncExtension Documents")
-    
     override init() {
         super.init()
         
-        NSLog("FinderSync() launched from %@", Bundle.main.bundlePath as NSString)
+        // 监控根目录，这样我们的右键菜单可以在任何地方出现
+        // 注意：这并不会消耗大量资源，系统会为我们优化处理
+        FIFinderSyncController.default().directoryURLs = [URL(fileURLWithPath: "/")]
         
-        // Set up the directory we are syncing.
-        FIFinderSyncController.default().directoryURLs = [self.myFolderURL]
-        
-        // Set up images for our badge identifiers. For demonstration purposes, this uses off-the-shelf images.
-        FIFinderSyncController.default().setBadgeImage(NSImage(named: NSImage.colorPanelName)!, label: "Status One" , forBadgeIdentifier: "One")
-        FIFinderSyncController.default().setBadgeImage(NSImage(named: NSImage.cautionName)!, label: "Status Two", forBadgeIdentifier: "Two")
+        NSLog("RightKitExtension successfully launched.")
     }
     
-    // MARK: - Primary Finder Sync protocol methods
-    
-    override func beginObservingDirectory(at url: URL) {
-        // The user is now seeing the container's contents.
-        // If they see it in more than one view at a time, we're only told once.
-        NSLog("beginObservingDirectoryAtURL: %@", url.path as NSString)
-    }
-    
-    
-    override func endObservingDirectory(at url: URL) {
-        // The user is no longer seeing the container's contents.
-        NSLog("endObservingDirectoryAtURL: %@", url.path as NSString)
-    }
-    
-    override func requestBadgeIdentifier(for url: URL) {
-        NSLog("requestBadgeIdentifierForURL: %@", url.path as NSString)
-        
-        // For demonstration purposes, this picks one of our two badges, or no badge at all, based on the filename.
-        let whichBadge = abs(url.path.hash) % 3
-        let badgeIdentifier = ["", "One", "Two"][whichBadge]
-        FIFinderSyncController.default().setBadgeIdentifier(badgeIdentifier, for: url)
-    }
-    
-    // MARK: - Menu and toolbar item support
-    
-    override var toolbarItemName: String {
-        return "FinderSy"
-    }
-    
-    override var toolbarItemToolTip: String {
-        return "FinderSy: Click the toolbar item for a menu."
-    }
-    
-    override var toolbarItemImage: NSImage {
-        return NSImage(named: NSImage.cautionName)!
-    }
+    // MARK: - Menu support
     
     override func menu(for menuKind: FIMenuKind) -> NSMenu {
-        // Produce a menu for the extension.
+        // 创建一个菜单，作为我们所有自定义项的容器
         let menu = NSMenu(title: "")
-        menu.addItem(withTitle: "Example Menu Item", action: #selector(sampleAction(_:)), keyEquivalent: "")
+        
+        // 添加我们的第一个硬编码菜单项
+        // action: 是点击后要执行的方法
+        // keyEquivalent: 是快捷键，这里留空
+        menu.addItem(withTitle: "Hello, RightKit!", action: #selector(helloAction(_:)), keyEquivalent: "")
+        
+        // 返回构建好的菜单，Finder会将其显示出来
         return menu
     }
     
-    @IBAction func sampleAction(_ sender: AnyObject?) {
-        let target = FIFinderSyncController.default().targetedURL()
-        let items = FIFinderSyncController.default().selectedItemURLs()
+    /// 我们自定义的菜单项点击后会调用的方法
+    @IBAction func helloAction(_ sender: AnyObject?) {
+        // FIFinderSyncController.default().targetedURL() 可以获取到你右键点击时鼠标指向的文件或文件夹的 URL
+        let targetURL = FIFinderSyncController.default().targetedURL()
         
-        let item = sender as! NSMenuItem
-        NSLog("sampleAction: menu item: %@, target = %@, items = ", item.title as NSString, target!.path as NSString)
-        for obj in items! {
-            NSLog("    %@", obj.path as NSString)
-        }
+        // FIFinderSyncController.default().selectedItemURLs() 可以获取到所有被选中的文件/文件夹的 URL 数组
+        let selectedURLs = FIFinderSyncController.default().selectedItemURLs()
+        
+        // 通过 NSLog 打印日志，方便我们调试
+        NSLog("Hello, RightKit! action triggered.")
+        NSLog("Targeted URL: \(targetURL?.path ?? "None")")
+        NSLog("Selected URLs: \(selectedURLs?.map { $0.path } ?? [])")
     }
-
 }
-
