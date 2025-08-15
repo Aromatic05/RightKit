@@ -120,17 +120,12 @@ class FinderSync: FIFinderSync {
         let target = FIFinderSyncController.default().targetedURL()
         let selectedItems = FIFinderSyncController.default().selectedItemURLs() ?? []
         
-        NSLog("RightKit: Target directory: %@", target?.path ?? "nil")
-        NSLog("RightKit: Selected items count: %d", selectedItems.count)
-        
-        // 处理动作
-        if let actionString = menuItem.representedObject as? String {
+        // 使用菜单标题来获取动作 - 这是最可靠的方法
+        if let actionString = MenuBuilder.shared.getAction(for: menuItem.title) {
             NSLog("RightKit: Processing action: %@", actionString)
             ActionHandler.shared.handleAction(actionString: actionString, targetURL: target, selectedItems: selectedItems)
         } else {
-            NSLog("RightKit: No action found for menu item, attempting fallback")
-            // Fallback：根据菜单标题推断动作
-            ActionHandler.shared.handleFallbackAction(menuTitle: menuItem.title, targetURL: target, selectedItems: selectedItems)
+            NSLog("RightKit: No action found for menu item title")
         }
     }
 }

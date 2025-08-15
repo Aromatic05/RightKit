@@ -70,25 +70,25 @@ class ConfigurationManager {
                 MenuItem(
                     name: "空白文本文件",
                     icon: "doc.text",
-                    action: Action(type: .createEmptyFile, parameter: "txt"),
+                    action: Action(type: .createEmptyFile, parameter: "新建文件.txt"),
                     children: nil
                 ),
                 MenuItem(
                     name: "Swift 文件",
                     icon: "swift",
-                    action: Action(type: .createEmptyFile, parameter: "swift"),
+                    action: Action(type: .createEmptyFile, parameter: "新建文件.swift"),
                     children: nil
                 ),
                 MenuItem(
                     name: "Markdown 文件",
                     icon: "doc.richtext",
-                    action: Action(type: .createEmptyFile, parameter: "md"),
+                    action: Action(type: .createEmptyFile, parameter: "新建文档.md"),
                     children: nil
                 ),
                 MenuItem(
                     name: "JSON 文件",
                     icon: "doc.text.below.ecg",
-                    action: Action(type: .createEmptyFile, parameter: "json"),
+                    action: Action(type: .createEmptyFile, parameter: "新建文件.json"),
                     children: nil
                 ),
                 MenuItem(
@@ -113,12 +113,26 @@ class ConfigurationManager {
             ]
         )
         
+        // 添加新建文件夹菜单项
+        let newFolderMenu = MenuItem(
+            name: "新建文件夹",
+            icon: "folder.badge.plus",
+            action: Action(type: .createFolder, parameter: "新建文件夹"),
+            children: nil
+        )
+        
         // 添加其他工具菜单项
         let toolsMenu = MenuItem(
             name: "工具",
             icon: "wrench.and.screwdriver",
             action: nil,
             children: [
+                MenuItem(
+                    name: "在此处打开终端",
+                    icon: "terminal",
+                    action: Action(type: .openTerminal, parameter: nil),
+                    children: nil
+                ),
                 MenuItem(
                     name: "复制路径",
                     icon: "doc.on.clipboard",
@@ -134,7 +148,7 @@ class ConfigurationManager {
             ]
         )
         
-        return MenuConfiguration(items: [newFileMenu, toolsMenu])
+        return MenuConfiguration(items: [newFileMenu, newFolderMenu, toolsMenu])
     }
     
     /// 保存配置到App Group容器

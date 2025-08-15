@@ -14,12 +14,18 @@ class MenuBuilder {
     
     private init() {}
     
+    // 使用菜单标题作为键的动作映射表 - 这在菜单重建时更稳定
+    private var titleToActionMap: [String: String] = [:]
+    
     // MARK: - Menu Building
     
     func buildMenu(for menuKind: FIMenuKind) -> NSMenu {
         NSLog("RightKit: Building menu for menuKind: %d", menuKind.rawValue)
         
         let menu = NSMenu(title: "")
+        
+        // 清空之前的映射
+        titleToActionMap.removeAll()
         
         // 加载配置并构建动态菜单
         do {
@@ -50,11 +56,10 @@ class MenuBuilder {
     private func buildMenuItem(from menuItem: MenuItem) -> NSMenuItem {
         let nsMenuItem = NSMenuItem(title: menuItem.name, action: #selector(FinderSync.menuItemClicked(_:)), keyEquivalent: "")
         
-        // 设置representedObject为简单字符串，避免序列化问题
+        // 记录菜单标题到动作的映射
         if let action = menuItem.action {
             let actionString = "\(action.type.rawValue)|\(action.parameter ?? "")"
-            nsMenuItem.representedObject = actionString
-            NSLog("RightKit: Created menu item '%@' with action: %@", menuItem.name, actionString)
+            titleToActionMap[menuItem.name] = actionString
         }
         
         // 处理子菜单
@@ -68,5 +73,10 @@ class MenuBuilder {
         }
         
         return nsMenuItem
+    }
+    
+    // 根据菜单标题获取动作字符串
+    func getAction(for title: String) -> String? {
+        return titleToActionMap[title]
     }
 }

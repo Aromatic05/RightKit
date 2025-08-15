@@ -25,7 +25,8 @@ struct Action: Codable {
 enum ActionType: String, Codable {
     case createEmptyFile
     case createFileFromTemplate
-    // 未来拓展...
+    case createFolder        // 添加创建文件夹动作
+    case openTerminal        // 添加打开终端动作
     case copyFilePath
     case cutFile
     case runShellScript

@@ -42,23 +42,6 @@ class ActionHandler {
         }
     }
     
-    func handleFallbackAction(menuTitle: String, targetURL: URL?, selectedItems: [URL]) {
-        NSLog("RightKit: Handling fallback action for: %@", menuTitle)
-        
-        // 根据菜单标题推断动作
-        if menuTitle.contains("空白文本文件") || menuTitle.contains("新建文件") {
-            createFile(filename: "新建文件.txt", in: targetURL)
-        } else if menuTitle.contains("Markdown") {
-            createFile(filename: "新建文档.md", in: targetURL)
-        } else if menuTitle.contains("文件夹") {
-            createFolder(name: "新建文件夹", in: targetURL)
-        } else if menuTitle.contains("终端") || menuTitle.contains("Terminal") {
-            openTerminal(at: targetURL)
-        } else {
-            NSLog("RightKit: Could not infer action from menu title: %@", menuTitle)
-        }
-    }
-    
     // MARK: - File Operations
     
     private func createFile(filename: String, in targetURL: URL?) {
