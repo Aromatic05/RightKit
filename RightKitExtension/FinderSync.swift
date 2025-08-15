@@ -29,47 +29,25 @@ class FinderSync: FIFinderSync {
     }
     
     private func setupDirectoryMonitoring() {
-        // 获取所有挂载的卷（包括外接磁盘）
-        var directoriesToMonitor: [URL] = []
-        
-        // 添加根目录 - 这样可以监控整个文件系统
-        directoriesToMonitor.append(URL(fileURLWithPath: "/"))
-        
-        // 添加用户目录（修正：用 NSHomeDirectory() 获取）
-        let homeDirectory = URL(fileURLWithPath: NSHomeDirectory())
-        directoriesToMonitor.append(homeDirectory)
-        
-        // 添加桌面
-        if let desktopDirectory = FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first {
-            directoriesToMonitor.append(desktopDirectory)
-        }
-        
-        // 添加文档目录
-        if let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
-            directoriesToMonitor.append(documentsDirectory)
-        }
-        
-        // 添加下载目录
-        if let downloadsDirectory = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first {
-            directoriesToMonitor.append(downloadsDirectory)
-        }
-        
-        // 获取所有挂载的卷（外接磁盘等）
-        let mountedVolumeURLs = FileManager.default.mountedVolumeURLs(includingResourceValuesForKeys: nil, options: [])
-        if let volumes = mountedVolumeURLs {
-            for volume in volumes {
-                // 排除系统特殊卷
-                let path = volume.path
-                if !path.hasPrefix("/System/Volumes/") && !path.hasPrefix("/private/") {
-                    directoriesToMonitor.append(volume)
-                }
+        var urls = Set<URL>()
+        let fm = FileManager.default
+
+        // 添加用户主目录
+        let homeURL = fm.homeDirectoryForCurrentUser
+        urls.insert(homeURL)
+        urls.insert(URL(fileURLWithPath: "/"))
+
+        // 添加所有已挂载的卷（跳过隐藏卷）
+        if let mounted = fm.mountedVolumeURLs(includingResourceValuesForKeys: [.isReadableKey], options: [.skipHiddenVolumes]) {
+            for vol in mounted {
+                urls.insert(vol)
             }
         }
         
         // 设置监控目录
-        FIFinderSyncController.default().directoryURLs = Set(directoriesToMonitor)
+        FIFinderSyncController.default().directoryURLs = Set(urls)
         
-        NSLog("RightKit: Monitoring directories: %@", directoriesToMonitor.map { $0.path }.joined(separator: ", "))
+        NSLog("Monitoring directories for FinderSync: \(urls.map { $0.path }.joined(separator: ", "))")
     }
     
     @objc private func configurationDidChange() {
