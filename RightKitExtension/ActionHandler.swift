@@ -178,40 +178,6 @@ class ActionHandler {
         DispatchQueue.main.async {
             let targetDirectory = fileURL.deletingLastPathComponent()
             NSWorkspace.shared.selectFile(fileURL.path, inFileViewerRootedAtPath: targetDirectory.path)
-            
-            NSLog("RightKit: Successfully selected file using effective method")
-            
-            // 延迟后尝试发送回车键激活重命名
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-                self.attemptKeyboardRename(for: fileURL)
-            }
-        }
-    }
-    
-    /// 尝试发送键盘事件激活重命名
-    private func attemptKeyboardRename(for fileURL: URL) {
-        NSLog("RightKit: Attempting keyboard rename activation")
-        
-        // 尝试更简单的AppleScript，避免复杂的应用程序引用
-        let script = """
-        delay 0.2
-        tell application "System Events"
-            keystroke return
-        end tell
-        """
-        
-        if let appleScript = NSAppleScript(source: script) {
-            var errorDict: NSDictionary?
-            appleScript.executeAndReturnError(&errorDict)
-            
-            if let error = errorDict {
-                NSLog("RightKit: Keyboard event failed: %@", error.description)
-                self.showRenameInstructions(for: fileURL)
-            } else {
-                NSLog("RightKit: Successfully sent keyboard event")
-            }
-        } else {
-            self.showRenameInstructions(for: fileURL)
         }
     }
     
