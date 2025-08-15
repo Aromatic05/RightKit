@@ -10,6 +10,12 @@ import Foundation
 /// 配置管理器，负责处理菜单配置的读写和App Group数据共享
 class ConfigurationManager {
     
+    /// 单例实例
+    static let shared = ConfigurationManager()
+    
+    /// 私有初始化器，确保单例模式
+    private init() {}
+    
     /// App Group ID - 需要与项目配置中的App Group ID一致
     static let appGroupID = "group.Aromatic.RightKit"
     
@@ -149,16 +155,16 @@ class ConfigurationManager {
         }
     }
     
-    /// 从App Group容器加载配置
-    static func loadConfiguration() -> MenuConfiguration? {
-        guard let configURL = configFileURL else {
-            NSLog("Error: Could not get configuration file URL")
-            return nil
+    /// 实例方法：加载配置
+    func loadConfiguration() throws -> MenuConfiguration {
+        guard let configURL = Self.configFileURL else {
+            throw NSError(domain: "ConfigurationManager", code: 1, userInfo: [NSLocalizedDescriptionKey: "Could not get configuration file URL"])
         }
         
-        guard FileManager.default.fileExists(atPath: configURL.path) else {
-            NSLog("Configuration file does not exist at: \(configURL.path)")
-            return nil
+        // 如果配置文件不存在，返回默认配置
+        if !FileManager.default.fileExists(atPath: configURL.path) {
+            NSLog("Configuration file does not exist, returning default configuration")
+            return Self.createDefaultConfiguration()
         }
         
         do {
@@ -168,8 +174,8 @@ class ConfigurationManager {
             NSLog("Configuration loaded successfully from: \(configURL.path)")
             return configuration
         } catch {
-            NSLog("Error loading configuration: \(error)")
-            return nil
+            NSLog("Error loading configuration: \(error), returning default configuration")
+            return Self.createDefaultConfiguration()
         }
     }
 }

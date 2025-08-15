@@ -42,6 +42,15 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		281362592E4F69C200079D31 /* Exceptions for "Shared" folder in "RightKitExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				ConfigurationManager.swift,
+				Models.swift,
+				TemplateManager.swift,
+			);
+			target = 2878AE812E4F386C009E9207 /* RightKitExtension */;
+		};
 		2878AE8B2E4F386C009E9207 /* Exceptions for "RightKitExtension" folder in "RightKitExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -52,6 +61,14 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		281362492E4F695F00079D31 /* Shared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				281362592E4F69C200079D31 /* Exceptions for "Shared" folder in "RightKitExtension" target */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
 		2878AE712E4F3824009E9207 /* RightKit */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = RightKit;
@@ -88,6 +105,7 @@
 		2878AE662E4F3824009E9207 = {
 			isa = PBXGroup;
 			children = (
+				281362492E4F695F00079D31 /* Shared */,
 				2878AE922E4F3A98009E9207 /* README.md */,
 				2878AE712E4F3824009E9207 /* RightKit */,
 				2878AE832E4F386C009E9207 /* RightKitExtension */,
@@ -122,6 +140,7 @@
 				2878AE892E4F386C009E9207 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
+				281362492E4F695F00079D31 /* Shared */,
 				2878AE712E4F3824009E9207 /* RightKit */,
 			);
 			name = RightKit;
