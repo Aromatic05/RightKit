@@ -78,11 +78,57 @@ class ConfigurationManager {
                     icon: "doc.richtext",
                     action: Action(type: .createEmptyFile, parameter: "md"),
                     children: nil
+                ),
+                MenuItem(
+                    name: "JSON 文件",
+                    icon: "doc.text.below.ecg",
+                    action: Action(type: .createEmptyFile, parameter: "json"),
+                    children: nil
+                ),
+                MenuItem(
+                    name: "从模板新建",
+                    icon: "doc.on.doc",
+                    action: nil,
+                    children: [
+                        MenuItem(
+                            name: "Swift 类模板",
+                            icon: "swift",
+                            action: Action(type: .createFileFromTemplate, parameter: "SwiftClass.swift"),
+                            children: nil
+                        ),
+                        MenuItem(
+                            name: "README 模板",
+                            icon: "doc.richtext",
+                            action: Action(type: .createFileFromTemplate, parameter: "README.md"),
+                            children: nil
+                        )
+                    ]
                 )
             ]
         )
         
-        return MenuConfiguration(items: [newFileMenu])
+        // 添加其他工具菜单项
+        let toolsMenu = MenuItem(
+            name: "工具",
+            icon: "wrench.and.screwdriver",
+            action: nil,
+            children: [
+                MenuItem(
+                    name: "复制路径",
+                    icon: "doc.on.clipboard",
+                    action: Action(type: .copyFilePath, parameter: nil),
+                    children: nil
+                ),
+                MenuItem(
+                    name: "剪切文件",
+                    icon: "scissors",
+                    action: Action(type: .cutFile, parameter: nil),
+                    children: nil
+                )
+            ]
+        )
+        
+        return MenuConfiguration(items: [newFileMenu, toolsMenu])
     }
     
     /// 保存配置到App Group容器
