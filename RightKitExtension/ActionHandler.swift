@@ -180,12 +180,4 @@ class ActionHandler {
             NSWorkspace.shared.selectFile(fileURL.path, inFileViewerRootedAtPath: targetDirectory.path)
         }
     }
-    
-    /// 显示重命名指导通知
-    private func showRenameInstructions(for fileURL: URL) {
-        NSLog("RightKit: Showing rename instructions to user")
-        // 确保文件在Finder中被选中
-        let workspace = NSWorkspace.shared
-        workspace.activateFileViewerSelecting([fileURL])
-    }
 }
