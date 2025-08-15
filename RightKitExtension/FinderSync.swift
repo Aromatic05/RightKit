@@ -47,23 +47,74 @@ class FinderSync: FIFinderSync {
     
     /// 加载菜单配置
     private func loadMenuConfiguration() {
+        NSLog("Starting loadMenuConfiguration...")
+        
         guard let configURL = configFileURL else {
             NSLog("Error: Could not get configuration file URL")
             return
         }
+        
+        NSLog("Configuration file path: \(configURL.path)")
         
         guard FileManager.default.fileExists(atPath: configURL.path) else {
             NSLog("Configuration file does not exist at: \(configURL.path)")
             return
         }
         
+        NSLog("Configuration file exists, attempting to load...")
+        
         do {
             let data = try Data(contentsOf: configURL)
+            NSLog("Configuration data loaded, size: \(data.count) bytes")
+            
             let decoder = JSONDecoder()
             cachedConfiguration = try decoder.decode(MenuConfiguration.self, from: data)
+            
+            NSLog("Menu configuration decoded successfully")
+            NSLog("Configuration version: \(cachedConfiguration?.version ?? "unknown")")
+            NSLog("Number of menu items: \(cachedConfiguration?.items.count ?? 0)")
+            
+            // 打印每个菜单项的详细信息
+            if let items = cachedConfiguration?.items {
+                for (index, item) in items.enumerated() {
+                    NSLog("Menu item \(index): \(item.name)")
+                    NSLog("  - Has action: \(item.action != nil)")
+                    if let action = item.action {
+                        NSLog("  - Action type: \(action.type.rawValue)")
+                        NSLog("  - Action parameter: \(action.parameter ?? "none")")
+                    }
+                    NSLog("  - Has children: \(item.children != nil)")
+                    if let children = item.children {
+                        NSLog("  - Children count: \(children.count)")
+                        for (childIndex, child) in children.enumerated() {
+                            NSLog("    Child \(childIndex): \(child.name)")
+                            NSLog("    - Has action: \(child.action != nil)")
+                            if let childAction = child.action {
+                                NSLog("    - Action type: \(childAction.type.rawValue)")
+                                NSLog("    - Action parameter: \(childAction.parameter ?? "none")")
+                            }
+                        }
+                    }
+                }
+            }
+            
             NSLog("Menu configuration loaded successfully from: \(configURL.path)")
         } catch {
             NSLog("Error loading menu configuration: \(error)")
+            if let decodingError = error as? DecodingError {
+                switch decodingError {
+                case .dataCorrupted(let context):
+                    NSLog("Data corrupted: \(context.debugDescription)")
+                case .keyNotFound(let key, let context):
+                    NSLog("Key not found: \(key.stringValue), context: \(context.debugDescription)")
+                case .typeMismatch(let type, let context):
+                    NSLog("Type mismatch: expected \(type), context: \(context.debugDescription)")
+                case .valueNotFound(let type, let context):
+                    NSLog("Value not found: \(type), context: \(context.debugDescription)")
+                @unknown default:
+                    NSLog("Unknown decoding error: \(error)")
+                }
+            }
         }
     }
     
@@ -86,43 +137,82 @@ class FinderSync: FIFinderSync {
     
     /// 递归构建菜单项
     private func buildMenuItems(from items: [MenuItem], into menu: NSMenu) {
-        for item in items {
+        NSLog("Building menu items, count: \(items.count)")
+        
+        for (index, item) in items.enumerated() {
+            NSLog("Processing menu item \(index): \(item.name)")
+            NSLog("  - Icon: \(item.icon ?? "none")")
+            NSLog("  - Has children: \(item.children != nil)")
+            NSLog("  - Has action: \(item.action != nil)")
+            
             let menuItem = NSMenuItem(title: item.name, action: nil, keyEquivalent: "")
             
             // 设置图标（如果有）
             if let iconName = item.icon {
                 if #available(macOS 11.0, *) {
                     menuItem.image = NSImage(systemSymbolName: iconName, accessibilityDescription: nil)
+                    NSLog("  - Icon set: \(iconName)")
                 }
             }
             
             // 如果有子菜单，递归创建
             if let children = item.children, !children.isEmpty {
+                NSLog("  - Creating submenu with \(children.count) children")
                 let submenu = NSMenu(title: item.name)
                 buildMenuItems(from: children, into: submenu)
                 menuItem.submenu = submenu
             } else if let action = item.action {
                 // 如果有动作，设置点击处理
+                NSLog("  - Setting up action: \(action.type.rawValue), parameter: \(action.parameter ?? "none")")
                 menuItem.action = #selector(menuItemClicked(_:))
                 menuItem.target = self
-                // 将动作信息存储在represented object中
-                menuItem.representedObject = action
+                
+                // 使用简单的字符串格式存储动作信息
+                let actionString = "\(action.type.rawValue)|\(action.parameter ?? "")"
+                menuItem.representedObject = actionString
+                
+                NSLog("  - Action string created: \(actionString)")
+            } else {
+                NSLog("  - No action set for menu item: \(item.name)")
             }
             
             menu.addItem(menuItem)
+            NSLog("  - Menu item added to menu")
         }
+        
+        NSLog("Finished building menu items")
     }
     
     // MARK: - Action Handling
     
     /// 处理菜单项点击
     @IBAction func menuItemClicked(_ sender: NSMenuItem) {
-        guard let action = sender.representedObject as? Action else {
-            NSLog("Error: No action found for menu item")
+        NSLog("menuItemClicked called for: \(sender.title)")
+        NSLog("Sender class: \(type(of: sender))")
+        NSLog("RepresentedObject: \(sender.representedObject as Any)")
+        NSLog("RepresentedObject type: \(type(of: sender.representedObject))")
+        
+        guard let actionString = sender.representedObject as? String else {
+            NSLog("Error: RepresentedObject is not a string or is nil")
+            // 作为fallback，尝试基于菜单项标题推断动作
+            handleFallbackAction(for: sender.title)
             return
         }
         
-        NSLog("Menu item clicked: \(sender.title), action: \(action.type.rawValue)")
+        NSLog("Action string received: \(actionString)")
+        
+        // 解析动作字符串
+        let components = actionString.split(separator: "|", maxSplits: 1)
+        guard let typeString = components.first,
+              let actionType = ActionType(rawValue: String(typeString)) else {
+            NSLog("Error: Failed to parse action type from: \(actionString)")
+            return
+        }
+        
+        let parameter = components.count > 1 ? String(components[1]) : nil
+        let finalParameter = (parameter?.isEmpty == true) ? nil : parameter
+        
+        NSLog("Parsed action - type: \(actionType.rawValue), parameter: \(finalParameter ?? "none")")
         
         // 获取当前上下文信息
         let targetURL = FIFinderSyncController.default().targetedURL()
@@ -132,17 +222,54 @@ class FinderSync: FIFinderSync {
         NSLog("Selected URLs: \(selectedURLs?.map { $0.path } ?? [])")
         
         // 根据动作类型执行相应操作
-        switch action.type {
+        switch actionType {
         case .createEmptyFile:
-            handleCreateEmptyFile(parameter: action.parameter, targetURL: targetURL)
+            NSLog("Executing createEmptyFile action")
+            handleCreateEmptyFile(parameter: finalParameter, targetURL: targetURL)
         case .createFileFromTemplate:
-            handleCreateFileFromTemplate(parameter: action.parameter, targetURL: targetURL)
+            NSLog("Executing createFileFromTemplate action")
+            handleCreateFileFromTemplate(parameter: finalParameter, targetURL: targetURL)
         case .copyFilePath:
+            NSLog("Executing copyFilePath action")
             handleCopyFilePath(selectedURLs: selectedURLs, targetURL: targetURL)
         case .cutFile:
+            NSLog("Executing cutFile action")
             handleCutFile(selectedURLs: selectedURLs)
         case .runShellScript:
-            handleRunShellScript(parameter: action.parameter, targetURL: targetURL)
+            NSLog("Executing runShellScript action")
+            handleRunShellScript(parameter: finalParameter, targetURL: targetURL)
+        }
+    }
+    
+    /// 作为fallback，基于菜单项标题推断动作
+    private func handleFallbackAction(for title: String) {
+        NSLog("Using fallback action detection for title: \(title)")
+        
+        let targetURL = FIFinderSyncController.default().targetedURL()
+        
+        switch title {
+        case "空白文本文件":
+            NSLog("Fallback: Creating empty txt file")
+            handleCreateEmptyFile(parameter: "txt", targetURL: targetURL)
+        case "Swift 文件":
+            NSLog("Fallback: Creating empty swift file")
+            handleCreateEmptyFile(parameter: "swift", targetURL: targetURL)
+        case "Markdown 文件":
+            NSLog("Fallback: Creating empty md file")
+            handleCreateEmptyFile(parameter: "md", targetURL: targetURL)
+        case "JSON 文件":
+            NSLog("Fallback: Creating empty json file")
+            handleCreateEmptyFile(parameter: "json", targetURL: targetURL)
+        case "复制路径":
+            NSLog("Fallback: Copying file path")
+            let selectedURLs = FIFinderSyncController.default().selectedItemURLs()
+            handleCopyFilePath(selectedURLs: selectedURLs, targetURL: targetURL)
+        case "剪切文件":
+            NSLog("Fallback: Cutting file")
+            let selectedURLs = FIFinderSyncController.default().selectedItemURLs()
+            handleCutFile(selectedURLs: selectedURLs)
+        default:
+            NSLog("Fallback: No action found for title: \(title)")
         }
     }
     
