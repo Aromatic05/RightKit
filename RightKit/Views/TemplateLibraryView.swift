@@ -1,20 +1,18 @@
-//
-//  TemplateLibraryView.swift
-//  RightKit
-//
-//  Created by Yiming Sun on 2025/8/15.
-//
-
 import SwiftUI
 import UniformTypeIdentifiers
 
 struct TemplateLibraryView: View {
     @EnvironmentObject var viewModel: AppViewModel
+    
+    // MARK: - 本地状态变量
     @State private var showingFilePicker = false
     @State private var showActionLibrary = true
     @State private var showTemplateLibrary = true
     @State private var selectedTemplate: TemplateInfo? = nil
     
+    // (修复第一步): 创建一个本地的 @State 变量来管理 List 的选择
+    @State private var localSelectedActionType: ActionType?
+
     // 获取所有操作类型
     private var allActions: [ActionType] {
         return [
@@ -48,7 +46,8 @@ struct TemplateLibraryView: View {
             DisclosureGroup(
                 isExpanded: $showActionLibrary,
                 content: {
-                    List(allActions, id: \.self, selection: $viewModel.selectedActionType) { actionType in
+                    // (修复第二步): 将 List 的 selection 绑定到本地的 @State 变量
+                    List(allActions, id: \.self, selection: $localSelectedActionType) { actionType in
                         HStack {
                             Image(systemName: actionTypeIcon(actionType))
                                 .foregroundColor(.accentColor)
@@ -155,13 +154,25 @@ struct TemplateLibraryView: View {
             switch result {
             case .success(let urls):
                 if let url = urls.first {
-                    viewModel.addTemplate(from: url)
+                    DispatchQueue.main.async {
+                        viewModel.addTemplate(from: url)
+                    }
                 }
             case .failure(let error):
                 NSLog("File picker error: \(error)")
             }
         }
+        // (推荐): 在视图出现时，用 viewModel 的值初始化本地状态
+        .onAppear {
+            localSelectedActionType = viewModel.selectedActionType
+        }
+        // (修复第三步): 监听本地状态的变化，然后在这里更新 viewModel
+        .onChange(of: localSelectedActionType) { newValue in
+            viewModel.selectedActionType = newValue
+        }
     }
+    
+    // ... private func ... (这部分无需改动)
     // 操作类型显示名
     private func actionTypeDisplayName(_ type: ActionType) -> String {
         switch type {
