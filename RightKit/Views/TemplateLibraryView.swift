@@ -31,7 +31,7 @@ struct TemplateLibraryView: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .center, spacing: 0) {
             // 标题栏
             HStack {
                 Text("模板与操作库")
@@ -39,11 +39,12 @@ struct TemplateLibraryView: View {
                     .foregroundColor(.primary)
                 Spacer()
             }
+            .frame(maxWidth: .infinity, alignment: .center)
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
             .background(.regularMaterial)
             Divider()
-                .padding(.top, 12)
+                .padding(.top, 0)
             // 操作库折叠菜单
             DisclosureGroup(
                 isExpanded: $showActionLibrary,
@@ -56,7 +57,8 @@ struct TemplateLibraryView: View {
                         }
                         .contentShape(Rectangle())
                     }
-                    .frame(minHeight: 120)
+                    .frame(minWidth: 180, maxWidth: 320, minHeight: 220, maxHeight: 320)
+                    .frame(maxWidth: .infinity, alignment: .center)
                 },
                 label: {
                     HStack {
@@ -72,19 +74,21 @@ struct TemplateLibraryView: View {
                         .buttonStyle(.borderless)
                         .help("添加新操作（暂未实现）")
                     }
+                    .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
+                    .padding(.leading, 12)
                 }
             )
-            .padding(.horizontal, 8)
+            .padding(.horizontal, 0)
             .padding(.vertical, 4)
+            .padding(.leading, 12)
             // 模板库折叠菜单
             DisclosureGroup(
                 isExpanded: $showTemplateLibrary,
                 content: {
                     if viewModel.templates.isEmpty {
-                        VStack {
-                            Spacer()
+                        VStack(alignment: .center) {
                             Image(systemName: "doc.badge.plus")
                                 .font(.system(size: 48))
                                 .foregroundColor(.secondary)
@@ -94,9 +98,9 @@ struct TemplateLibraryView: View {
                             Text("点击 + 按钮添加模板文件")
                                 .font(.caption)
                                 .foregroundColor(.secondary.opacity(0.7))
-                            Spacer()
                         }
-                        .frame(maxWidth: .infinity)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.vertical, 32)
                     } else {
                         List(viewModel.templates, id: \ .id, selection: $selectedTemplate) { template in
                             HStack(spacing: 12) {
@@ -115,7 +119,8 @@ struct TemplateLibraryView: View {
                             }
                             .contentShape(Rectangle())
                         }
-                        .frame(minHeight: 120)
+                        .frame(minWidth: 180, maxWidth: 320, minHeight: 220, maxHeight: 320)
+                        .frame(maxWidth: .infinity, alignment: .center)
                     }
                 },
                 label: {
@@ -132,12 +137,16 @@ struct TemplateLibraryView: View {
                         .buttonStyle(.borderless)
                         .help("添加新模板")
                     }
+                    .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
+                    .padding(.leading, 12)
                 }
             )
-            .padding(.horizontal, 8)
+            .padding(.horizontal, 0)
             .padding(.vertical, 4)
+            .padding(.leading, 12)
+            Spacer(minLength: 0)
         }
         .fileImporter(
             isPresented: $showingFilePicker,
