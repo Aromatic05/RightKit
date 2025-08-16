@@ -167,8 +167,8 @@ struct TemplateLibraryView: View {
             localSelectedActionType = viewModel.selectedActionType
         }
         // (修复第三步): 监听本地状态的变化，然后在这里更新 viewModel
-        .onChange(of: localSelectedActionType) { newValue in
-            viewModel.selectedActionType = newValue
+        .onChange(of: localSelectedActionType) {
+            viewModel.selectedActionType = localSelectedActionType
         }
     }
 }
