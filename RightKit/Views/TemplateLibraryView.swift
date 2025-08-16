@@ -38,63 +38,6 @@ struct TemplateLibraryView: View {
             
             Divider()
             
-            // 快速添加按钮
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("快速操作")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundColor(.secondary)
-                    Spacer()
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
-                
-                LazyVGrid(columns: [
-                    GridItem(.flexible()),
-                    GridItem(.flexible())
-                ], spacing: 8) {
-                    QuickActionButton(
-                        title: "空白文件",
-                        icon: "doc",
-                        color: .blue
-                    ) {
-                        viewModel.addEmptyFileAction()
-                    }
-                    
-                    QuickActionButton(
-                        title: "子菜单",
-                        icon: "folder",
-                        color: .orange
-                    ) {
-                        viewModel.addSubmenu()
-                    }
-                    
-                    QuickActionButton(
-                        title: "分隔线",
-                        icon: "minus",
-                        color: .gray
-                    ) {
-                        viewModel.addSeparator()
-                    }
-                    
-                    QuickActionButton(
-                        title: "新建文件夹",
-                        icon: "folder.badge.plus",
-                        color: .green
-                    ) {
-                        let folderAction = MenuItem(
-                            name: "新建文件夹",
-                            icon: "folder.badge.plus",
-                            action: Action(type: .createFolder, parameter: nil),
-                            children: nil
-                        )
-                        viewModel.addMenuItem(folderAction)
-                    }
-                }
-                .padding(.horizontal, 16)
-            }
-            
             Divider()
                 .padding(.top, 12)
             
