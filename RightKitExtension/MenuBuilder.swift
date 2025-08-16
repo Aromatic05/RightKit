@@ -83,6 +83,11 @@ class MenuBuilder {
     
     private func buildMenuItem(from menuItem: MenuItem) -> NSMenuItem {
         let nsMenuItem = NSMenuItem(title: menuItem.name, action: #selector(FinderSync.menuItemClicked(_:)), keyEquivalent: "")
+        // 设置图标
+        let iconName = menuItem.icon ?? "questionmark"
+        if let image = NSImage(systemSymbolName: iconName, accessibilityDescription: menuItem.name) {
+            nsMenuItem.image = image
+        }
         
         // 记录菜单标题到动作的映射
         if let action = menuItem.action {
