@@ -9,8 +9,20 @@ import SwiftUI
 
 struct MenuEditorView: View {
     @EnvironmentObject var viewModel: AppViewModel
-    @State private var selectedItem: MenuItem?
-    @State private var expandedItems: Set<String> = []
+    @State private var selectedItemId: UUID?
+    @State private var expandedItems: Set<UUID> = []
+    
+    // 递归查找选中项
+    private func findMenuItem(by id: UUID?, in items: [MenuItem]) -> MenuItem? {
+        guard let id = id else { return nil }
+        for item in items {
+            if item.id == id { return item }
+            if let children = item.children, let found = findMenuItem(by: id, in: children) {
+                return found
+            }
+        }
+        return nil
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -67,7 +79,7 @@ struct MenuEditorView: View {
                             MenuItemTreeView(
                                 item: item,
                                 level: 0,
-                                selectedItem: $selectedItem,
+                                selectedItemId: $selectedItemId,
                                 expandedItems: $expandedItems
                             )
                             .environmentObject(viewModel)
@@ -78,7 +90,7 @@ struct MenuEditorView: View {
             }
             
             // 底部详情编辑区域
-            if let selectedItem = selectedItem {
+            if let selectedItem = findMenuItem(by: selectedItemId, in: viewModel.menuItems) {
                 Divider()
                 MenuItemDetailEditor(item: selectedItem)
                     .environmentObject(viewModel)
@@ -99,8 +111,8 @@ struct MenuEditorView: View {
 struct MenuItemTreeView: View {
     let item: MenuItem
     let level: Int
-    @Binding var selectedItem: MenuItem?
-    @Binding var expandedItems: Set<String>
+    @Binding var selectedItemId: UUID?
+    @Binding var expandedItems: Set<UUID>
     @EnvironmentObject var viewModel: AppViewModel
     @State private var isHovered = false
     
@@ -191,8 +203,8 @@ struct MenuItemTreeView: View {
                         
                         Button {
                             viewModel.removeMenuItem(item)
-                            if selectedItem?.id == item.id {
-                                selectedItem = nil
+                            if selectedItemId == item.id {
+                                selectedItemId = nil
                             }
                         } label: {
                             Image(systemName: "trash")
@@ -207,11 +219,11 @@ struct MenuItemTreeView: View {
             .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: 6)
-                    .fill(selectedItem?.id == item.id ? Color.accentColor.opacity(0.1) : Color.clear)
+                    .fill(selectedItemId == item.id ? Color.accentColor.opacity(0.1) : Color.clear)
             )
             .contentShape(Rectangle())
             .onTapGesture {
-                selectedItem = item
+                selectedItemId = item.id
             }
             .onHover { hovering in
                 withAnimation(.easeInOut(duration: 0.2)) {
@@ -225,7 +237,7 @@ struct MenuItemTreeView: View {
                     MenuItemTreeView(
                         item: childItem,
                         level: level + 1,
-                        selectedItem: $selectedItem,
+                        selectedItemId: $selectedItemId,
                         expandedItems: $expandedItems
                     )
                     .environmentObject(viewModel)

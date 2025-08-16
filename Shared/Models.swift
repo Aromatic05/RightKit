@@ -9,7 +9,8 @@ import Foundation
 import SwiftUI
 
 /// 菜单项数据模型
-struct MenuItem: Codable, Equatable {
+struct MenuItem: Codable, Equatable, Identifiable {
+    var id: UUID = UUID() // 唯一标识符
     var name: String          // 菜单项名称
     var icon: String?         // 图标名称 (SF Symbols 或内置资源)
     var action: Action?       // 关联的动作
@@ -58,11 +59,7 @@ struct TemplateInfo: Codable, Identifiable, Equatable, Transferable {
 
 // MARK: - UI Extensions
 
-extension MenuItem: Identifiable {
-    var id: String {
-        return "\(name)-\(icon ?? "")-\(action?.type.rawValue ?? "")"
-    }
-    
+extension MenuItem {
     /// 获取菜单项的类型描述
     var typeDescription: String {
         if let action = action {
