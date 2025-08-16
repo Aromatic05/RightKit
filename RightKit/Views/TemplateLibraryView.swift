@@ -13,7 +13,6 @@ struct TemplateLibraryView: View {
     @State private var showingFilePicker = false
     @State private var showActionLibrary = true
     @State private var showTemplateLibrary = true
-    @State private var selectedActionType: ActionType? = nil
     @State private var selectedTemplate: TemplateInfo? = nil
     
     // 获取所有操作类型
@@ -49,7 +48,7 @@ struct TemplateLibraryView: View {
             DisclosureGroup(
                 isExpanded: $showActionLibrary,
                 content: {
-                    List(allActions, id: \ .self, selection: $selectedActionType) { actionType in
+                    List(allActions, id: \.self, selection: $viewModel.selectedActionType) { actionType in
                         HStack {
                             Image(systemName: actionTypeIcon(actionType))
                                 .foregroundColor(.accentColor)
@@ -102,7 +101,7 @@ struct TemplateLibraryView: View {
                         .frame(maxWidth: .infinity, alignment: .center)
                         .padding(.vertical, 32)
                     } else {
-                        List(viewModel.templates, id: \ .id, selection: $selectedTemplate) { template in
+                        List(viewModel.templates, id: \.id, selection: $selectedTemplate) { template in
                             HStack(spacing: 12) {
                                 Image(systemName: template.iconName ?? "doc")
                                     .foregroundColor(.accentColor)

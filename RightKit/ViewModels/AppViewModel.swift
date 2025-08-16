@@ -13,6 +13,7 @@ class AppViewModel: ObservableObject {
     @Published var menuItems: [MenuItem] = []
     @Published var templates: [TemplateInfo] = []
     @Published var hasChanges = false
+    @Published var selectedActionType: ActionType? = nil
     
     private let configurationManager = ConfigurationManager.shared
     

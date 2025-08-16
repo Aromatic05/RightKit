@@ -35,13 +35,37 @@ struct MenuEditorView: View {
                 Spacer()
                 
                 HStack(spacing: 8) {
-                    Button("添加子菜单") {
-                        viewModel.addSubmenu()
+                    Button("添加子项") {
+                        print("[DEBUG] 添加子项按钮点击, 当前选中操作: \(String(describing: viewModel.selectedActionType))")
+                        DispatchQueue.main.async {
+                            if let actionType = viewModel.selectedActionType {
+                                print("[DEBUG] 创建新菜单项, 类型: \(actionType)")
+                                let newItem = MenuItem(
+                                    name: actionTypeDisplayName(actionType),
+                                    icon: actionTypeIcon(actionType),
+                                    action: Action(type: actionType, parameter: nil),
+                                    children: nil
+                                )
+                                if let parent = findMenuItem(by: selectedItemId, in: viewModel.menuItems) {
+                                    print("[DEBUG] 添加到父菜单: \(parent.name)")
+                                    viewModel.addMenuItem(newItem, to: parent)
+                                    expandedItems.insert(parent.id)
+                                } else {
+                                    print("[DEBUG] 添加到根菜单")
+                                    viewModel.addMenuItem(newItem)
+                                }
+                            } else {
+                                print("[DEBUG] 未选中操作类型, 添加默认子菜单")
+                                viewModel.addSubmenu()
+                            }
+                        }
                     }
                     .buttonStyle(.bordered)
                     
                     Button("添加分隔线") {
-                        viewModel.addSeparator()
+                        DispatchQueue.main.async {
+                            viewModel.addSeparator()
+                        }
                     }
                     .buttonStyle(.bordered)
                 }
@@ -186,13 +210,28 @@ struct MenuItemTreeView: View {
                     HStack(spacing: 4) {
                         if hasChildren {
                             Button {
-                                let newItem = MenuItem(
-                                    name: "新项目",
-                                    icon: "doc",
-                                    action: Action(type: .createEmptyFile, parameter: "txt"),
-                                    children: nil
-                                )
-                                viewModel.addMenuItem(newItem, to: item)
+                                print("[DEBUG] 悬停加号点击, 当前选中操作: \(String(describing: viewModel.selectedActionType))")
+                                DispatchQueue.main.async {
+                                    if let actionType = viewModel.selectedActionType {
+                                        print("[DEBUG] 创建新菜单项, 类型: \(actionType)")
+                                        let newItem = MenuItem(
+                                            name: actionTypeDisplayName(actionType),
+                                            icon: actionTypeIcon(actionType),
+                                            action: Action(type: actionType, parameter: nil),
+                                            children: nil
+                                        )
+                                        viewModel.addMenuItem(newItem, to: item)
+                                    } else {
+                                        print("[DEBUG] 未选中操作类型, 添加默认新项目")
+                                        let newItem = MenuItem(
+                                            name: "新项目",
+                                            icon: "doc",
+                                            action: Action(type: .createEmptyFile, parameter: "txt"),
+                                            children: nil
+                                        )
+                                        viewModel.addMenuItem(newItem, to: item)
+                                    }
+                                }
                             } label: {
                                 Image(systemName: "plus")
                                     .foregroundColor(.accentColor)
@@ -273,6 +312,32 @@ struct MenuItemTreeView: View {
         }
         
         return .secondary
+    }
+}
+
+// ActionType显示名和图标辅助方法
+private func actionTypeDisplayName(_ type: ActionType) -> String {
+    switch type {
+    case .createEmptyFile: return "新建空文件"
+    case .createFileFromTemplate: return "模板文件"
+    case .createFolder: return "新建文件夹"
+    case .openTerminal: return "打开终端"
+    case .copyFilePath: return "复制路径"
+    case .cutFile: return "剪切文件"
+    case .runShellScript: return "运行脚本"
+    case .separator: return "分隔线"
+    }
+}
+private func actionTypeIcon(_ type: ActionType) -> String {
+    switch type {
+    case .createEmptyFile: return "doc"
+    case .createFileFromTemplate: return "doc.badge.plus"
+    case .createFolder: return "folder"
+    case .openTerminal: return "terminal"
+    case .copyFilePath: return "doc.on.doc"
+    case .cutFile: return "scissors"
+    case .runShellScript: return "play"
+    case .separator: return "minus"
     }
 }
 
