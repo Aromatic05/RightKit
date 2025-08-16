@@ -83,7 +83,7 @@ extension MenuItem {
             }
         }
         
-        if children != nil && !(children?.isEmpty ?? true) {
+        if action == nil {
             return "子菜单"
         }
         

@@ -23,6 +23,10 @@ struct MenuItemTreeView: View {
         item.children?.isEmpty == false
     }
     
+    private var isSubmenu: Bool {
+        item.action == nil
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // 当前项目行
@@ -37,9 +41,19 @@ struct MenuItemTreeView: View {
                 }
                 
                 // 展开/收起按钮
-                if hasChildren {
+                if isSubmenu {
                     Button {
                         withAnimation(.easeInOut(duration: 0.2)) {
+                            if item.children == nil {
+                                // 初始化 children 为空数组
+                                viewModel.addMenuItem(MenuItem(
+                                    id: item.id,
+                                    name: item.name,
+                                    icon: item.icon,
+                                    action: item.action,
+                                    children: []
+                                ), to: nil)
+                            }
                             if isExpanded {
                                 expandedItems.remove(item.id)
                             } else {
@@ -81,47 +95,43 @@ struct MenuItemTreeView: View {
                     .cornerRadius(4)
                 
                 // 悬停时的操作按钮
-                if isHovered {
+                if isHovered && isSubmenu {
                     HStack(spacing: 4) {
-                        if hasChildren {
-                            Button {
-                                DispatchQueue.main.async {
-                                    let selectedType = viewModel.selectedActionType
-                                    if selectedType == nil {
-                                        // 子菜单：action 为 nil，children 为空数组
-                                        let newItem = MenuItem(
-                                            name: "新子菜单",
-                                            icon: "list.bullet",
-                                            action: nil,
-                                            children: []
-                                        )
-                                        viewModel.addMenuItem(newItem, to: item)
-                                    } else if let type = selectedType {
-                                        let newItem = MenuItem(
-                                            name: ActionTypeUtils.displayName(for: type),
-                                            icon: ActionTypeUtils.icon(for: type),
-                                            action: Action(type: type, parameter: nil),
-                                            children: nil
-                                        )
-                                        viewModel.addMenuItem(newItem, to: item)
-                                    } else {
-                                        let newItem = MenuItem(
-                                            name: "新项目",
-                                            icon: "doc",
-                                            action: Action(type: .createEmptyFile, parameter: "txt"),
-                                            children: nil
-                                        )
-                                        viewModel.addMenuItem(newItem, to: item)
-                                    }
+                        Button {
+                            DispatchQueue.main.async {
+                                let selectedType = viewModel.selectedActionType
+                                if selectedType == nil {
+                                    let newItem = MenuItem(
+                                        name: "新子菜单",
+                                        icon: "list.bullet",
+                                        action: nil,
+                                        children: nil
+                                    )
+                                    viewModel.addMenuItem(newItem, to: item)
+                                } else if let type = selectedType {
+                                    let newItem = MenuItem(
+                                        name: ActionTypeUtils.displayName(for: type),
+                                        icon: ActionTypeUtils.icon(for: type),
+                                        action: Action(type: type, parameter: nil),
+                                        children: nil
+                                    )
+                                    viewModel.addMenuItem(newItem, to: item)
+                                } else {
+                                    let newItem = MenuItem(
+                                        name: "新项目",
+                                        icon: "doc",
+                                        action: Action(type: .createEmptyFile, parameter: "txt"),
+                                        children: nil
+                                    )
+                                    viewModel.addMenuItem(newItem, to: item)
                                 }
-                            } label: {
-                                Image(systemName: "plus")
-                                    .foregroundColor(.accentColor)
                             }
-                            .buttonStyle(.borderless)
-                            .help("添加子项或子菜单")
+                        } label: {
+                            Image(systemName: "plus")
+                                .foregroundColor(.accentColor)
                         }
-                        
+                        .buttonStyle(.borderless)
+                        .help("添加子项或子菜单")
                         Button {
                             viewModel.removeMenuItem(item)
                             if selectedItemId == item.id {
@@ -153,7 +163,7 @@ struct MenuItemTreeView: View {
             }
             
             // 子项目
-            if hasChildren && isExpanded {
+            if isSubmenu && isExpanded {
                 ForEach(item.children ?? []) { childItem in
                     MenuItemTreeView(
                         item: childItem,
