@@ -12,17 +12,31 @@ struct TemplateLibraryView: View {
     @EnvironmentObject var viewModel: AppViewModel
     @State private var showingFilePicker = false
     @State private var draggedTemplate: TemplateInfo?
+    @State private var showActionLibrary = true
+    @State private var showTemplateLibrary = true
+    
+    // 获取所有操作类型
+    private var allActions: [ActionType] {
+        return [
+            .createEmptyFile,
+            .createFileFromTemplate,
+            .createFolder,
+            .openTerminal,
+            .copyFilePath,
+            .cutFile,
+            .runShellScript,
+            .separator
+        ]
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // 标题栏
             HStack {
-                Text("模板库")
+                Text("模板与操作库")
                     .font(.headline)
                     .foregroundColor(.primary)
-                
                 Spacer()
-                
                 Button(action: {
                     showingFilePicker = true
                 }) {
@@ -35,54 +49,86 @@ struct TemplateLibraryView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
             .background(.regularMaterial)
-            
-            Divider()
-            
             Divider()
                 .padding(.top, 12)
-            
-            // 模板列表
-            if viewModel.templates.isEmpty {
-                VStack {
-                    Spacer()
-                    
-                    Image(systemName: "doc.badge.plus")
-                        .font(.system(size: 48))
-                        .foregroundColor(.secondary)
-                    
-                    Text("暂无模板")
-                        .font(.title2)
-                        .foregroundColor(.secondary)
-                    
-                    Text("点击 + 按钮添加模板文件")
-                        .font(.caption)
-                        .foregroundColor(.secondary.opacity(0.7))
-                    
-                    Spacer()
+            // 操作库折叠菜单
+            DisclosureGroup(isExpanded: $showActionLibrary) {
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(allActions, id: \ .self) { actionType in
+                        Button(action: {
+                            let item = MenuItem(
+                                name: actionTypeDisplayName(actionType),
+                                icon: actionTypeIcon(actionType),
+                                action: Action(type: actionType, parameter: nil),
+                                children: nil
+                            )
+                            viewModel.addMenuItem(item)
+                        }) {
+                            HStack {
+                                Image(systemName: actionTypeIcon(actionType))
+                                    .foregroundColor(.accentColor)
+                                Text(actionTypeDisplayName(actionType))
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                    }
                 }
-                .frame(maxWidth: .infinity)
-            } else {
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack {
-                        Text("文件模板")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+            } label: {
+                Text("操作库")
+                    .font(.title3)
+                    .fontWeight(.medium)
+                    .foregroundColor(.accentColor)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            // 模板库折叠菜单
+            DisclosureGroup(isExpanded: $showTemplateLibrary) {
+                if viewModel.templates.isEmpty {
+                    VStack {
+                        Spacer()
+                        Image(systemName: "doc.badge.plus")
+                            .font(.system(size: 48))
                             .foregroundColor(.secondary)
+                        Text("暂无模板")
+                            .font(.title2)
+                            .foregroundColor(.secondary)
+                        Text("点击 + 按钮添加模板文件")
+                            .font(.caption)
+                            .foregroundColor(.secondary.opacity(0.7))
                         Spacer()
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 12)
-                    
-                    List {
-                        ForEach(viewModel.templates) { template in
-                            TemplateRowView(template: template)
-                                .environmentObject(viewModel)
+                    .frame(maxWidth: .infinity)
+                } else {
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack {
+                            Text("文件模板")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundColor(.secondary)
+                            Spacer()
                         }
-                        .onDelete(perform: deleteTemplates)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 12)
+                        List {
+                            ForEach(viewModel.templates) { template in
+                                TemplateRowView(template: template)
+                                    .environmentObject(viewModel)
+                            }
+                            .onDelete(perform: deleteTemplates)
+                        }
+                        .listStyle(.sidebar)
                     }
-                    .listStyle(.sidebar)
                 }
+            } label: {
+                Text("模板库")
+                    .font(.title3)
+                    .fontWeight(.medium)
+                    .foregroundColor(.accentColor)
             }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
         }
         .fileImporter(
             isPresented: $showingFilePicker,
@@ -99,7 +145,32 @@ struct TemplateLibraryView: View {
             }
         }
     }
-    
+    // 操作类型显示名
+    private func actionTypeDisplayName(_ type: ActionType) -> String {
+        switch type {
+        case .createEmptyFile: return "新建空文件"
+        case .createFileFromTemplate: return "模板文件"
+        case .createFolder: return "新建文件夹"
+        case .openTerminal: return "打开终端"
+        case .copyFilePath: return "复制路径"
+        case .cutFile: return "剪切文件"
+        case .runShellScript: return "运行脚本"
+        case .separator: return "分隔线"
+        }
+    }
+    // 操作类型图标
+    private func actionTypeIcon(_ type: ActionType) -> String {
+        switch type {
+        case .createEmptyFile: return "doc"
+        case .createFileFromTemplate: return "doc.badge.plus"
+        case .createFolder: return "folder"
+        case .openTerminal: return "terminal"
+        case .copyFilePath: return "doc.on.doc"
+        case .cutFile: return "scissors"
+        case .runShellScript: return "play"
+        case .separator: return "minus"
+        }
+    }
     private func deleteTemplates(offsets: IndexSet) {
         for index in offsets {
             viewModel.removeTemplate(at: index)
