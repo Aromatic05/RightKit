@@ -42,7 +42,7 @@ struct MenuConfiguration: Codable {
 }
 
 /// 模板信息数据模型
-struct TemplateInfo: Codable, Identifiable, Equatable, Transferable {
+struct TemplateInfo: Codable, Identifiable, Equatable, Transferable, Hashable {
     let id = UUID()
     var fileName: String      // 模板文件名
     var displayName: String   // 显示名称

@@ -11,9 +11,10 @@ import UniformTypeIdentifiers
 struct TemplateLibraryView: View {
     @EnvironmentObject var viewModel: AppViewModel
     @State private var showingFilePicker = false
-    @State private var draggedTemplate: TemplateInfo?
     @State private var showActionLibrary = true
     @State private var showTemplateLibrary = true
+    @State private var selectedActionType: ActionType? = nil
+    @State private var selectedTemplate: TemplateInfo? = nil
     
     // 获取所有操作类型
     private var allActions: [ActionType] {
@@ -37,14 +38,6 @@ struct TemplateLibraryView: View {
                     .font(.headline)
                     .foregroundColor(.primary)
                 Spacer()
-                Button(action: {
-                    showingFilePicker = true
-                }) {
-                    Image(systemName: "plus")
-                        .foregroundColor(.accentColor)
-                }
-                .buttonStyle(.borderless)
-                .help("添加新模板")
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
@@ -52,81 +45,97 @@ struct TemplateLibraryView: View {
             Divider()
                 .padding(.top, 12)
             // 操作库折叠菜单
-            DisclosureGroup(isExpanded: $showActionLibrary) {
-                VStack(alignment: .leading, spacing: 8) {
-                    ForEach(allActions, id: \ .self) { actionType in
-                        Button(action: {
-                            let item = MenuItem(
-                                name: actionTypeDisplayName(actionType),
-                                icon: actionTypeIcon(actionType),
-                                action: Action(type: actionType, parameter: nil),
-                                children: nil
-                            )
-                            viewModel.addMenuItem(item)
-                        }) {
-                            HStack {
-                                Image(systemName: actionTypeIcon(actionType))
-                                    .foregroundColor(.accentColor)
-                                Text(actionTypeDisplayName(actionType))
-                            }
+            DisclosureGroup(
+                isExpanded: $showActionLibrary,
+                content: {
+                    List(allActions, id: \ .self, selection: $selectedActionType) { actionType in
+                        HStack {
+                            Image(systemName: actionTypeIcon(actionType))
+                                .foregroundColor(.accentColor)
+                            Text(actionTypeDisplayName(actionType))
                         }
-                        .buttonStyle(.bordered)
+                        .contentShape(Rectangle())
                     }
+                    .frame(minHeight: 120)
+                },
+                label: {
+                    HStack {
+                        Text("操作库")
+                            .font(.title3)
+                            .fontWeight(.medium)
+                            .foregroundColor(.accentColor)
+                        Spacer()
+                        Button(action: {}) {
+                            Image(systemName: "plus")
+                                .foregroundColor(.accentColor)
+                        }
+                        .buttonStyle(.borderless)
+                        .help("添加新操作（暂未实现）")
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-            } label: {
-                Text("操作库")
-                    .font(.title3)
-                    .fontWeight(.medium)
-                    .foregroundColor(.accentColor)
-            }
+            )
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             // 模板库折叠菜单
-            DisclosureGroup(isExpanded: $showTemplateLibrary) {
-                if viewModel.templates.isEmpty {
-                    VStack {
-                        Spacer()
-                        Image(systemName: "doc.badge.plus")
-                            .font(.system(size: 48))
-                            .foregroundColor(.secondary)
-                        Text("暂无模板")
-                            .font(.title2)
-                            .foregroundColor(.secondary)
-                        Text("点击 + 按钮添加模板文件")
-                            .font(.caption)
-                            .foregroundColor(.secondary.opacity(0.7))
-                        Spacer()
-                    }
-                    .frame(maxWidth: .infinity)
-                } else {
-                    VStack(alignment: .leading, spacing: 0) {
-                        HStack {
-                            Text("文件模板")
-                                .font(.subheadline)
-                                .fontWeight(.medium)
+            DisclosureGroup(
+                isExpanded: $showTemplateLibrary,
+                content: {
+                    if viewModel.templates.isEmpty {
+                        VStack {
+                            Spacer()
+                            Image(systemName: "doc.badge.plus")
+                                .font(.system(size: 48))
                                 .foregroundColor(.secondary)
+                            Text("暂无模板")
+                                .font(.title2)
+                                .foregroundColor(.secondary)
+                            Text("点击 + 按钮添加模板文件")
+                                .font(.caption)
+                                .foregroundColor(.secondary.opacity(0.7))
                             Spacer()
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.top, 12)
-                        List {
-                            ForEach(viewModel.templates) { template in
-                                TemplateRowView(template: template)
-                                    .environmentObject(viewModel)
+                        .frame(maxWidth: .infinity)
+                    } else {
+                        List(viewModel.templates, id: \ .id, selection: $selectedTemplate) { template in
+                            HStack(spacing: 12) {
+                                Image(systemName: template.iconName ?? "doc")
+                                    .foregroundColor(.accentColor)
+                                    .frame(width: 20)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(template.displayName)
+                                        .font(.system(.body, design: .rounded))
+                                        .foregroundColor(.primary)
+                                    Text(template.fileName)
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                Spacer()
                             }
-                            .onDelete(perform: deleteTemplates)
+                            .contentShape(Rectangle())
                         }
-                        .listStyle(.sidebar)
+                        .frame(minHeight: 120)
                     }
+                },
+                label: {
+                    HStack {
+                        Text("模板库")
+                            .font(.title3)
+                            .fontWeight(.medium)
+                            .foregroundColor(.accentColor)
+                        Spacer()
+                        Button(action: { showingFilePicker = true }) {
+                            Image(systemName: "plus")
+                                .foregroundColor(.accentColor)
+                        }
+                        .buttonStyle(.borderless)
+                        .help("添加新模板")
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
                 }
-            } label: {
-                Text("模板库")
-                    .font(.title3)
-                    .fontWeight(.medium)
-                    .foregroundColor(.accentColor)
-            }
+            )
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
         }
@@ -169,98 +178,6 @@ struct TemplateLibraryView: View {
         case .cutFile: return "scissors"
         case .runShellScript: return "play"
         case .separator: return "minus"
-        }
-    }
-    private func deleteTemplates(offsets: IndexSet) {
-        for index in offsets {
-            viewModel.removeTemplate(at: index)
-        }
-    }
-}
-
-struct QuickActionButton: View {
-    let title: String
-    let icon: String
-    let color: Color
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(color)
-                
-                Text(title)
-                    .font(.caption)
-                    .foregroundColor(.primary)
-                    .multilineTextAlignment(.center)
-            }
-            .frame(maxWidth: .infinity, minHeight: 44)
-            .background(Color(NSColor.controlBackgroundColor))
-            .cornerRadius(8)
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color.primary.opacity(0.1), lineWidth: 1)
-            )
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-struct TemplateRowView: View {
-    let template: TemplateInfo
-    @EnvironmentObject var viewModel: AppViewModel
-    @State private var isHovered = false
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            // 图标
-            if let iconName = template.iconName {
-                Image(systemName: iconName)
-                    .foregroundColor(.accentColor)
-                    .frame(width: 20)
-            } else {
-                Image(systemName: "doc")
-                    .foregroundColor(.secondary)
-                    .frame(width: 20)
-            }
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text(template.displayName)
-                    .font(.system(.body, design: .rounded))
-                    .foregroundColor(.primary)
-                
-                Text(template.fileName)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            
-            Spacer()
-            
-            if isHovered {
-                Button("添加到菜单") {
-                    viewModel.createMenuItemFromTemplate(template)
-                }
-                .buttonStyle(.borderless)
-                .font(.caption)
-                .foregroundColor(.accentColor)
-            }
-        }
-        .padding(.vertical, 4)
-        .contentShape(Rectangle())
-        .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.2)) {
-                isHovered = hovering
-            }
-        }
-        .draggable(template) {
-            HStack {
-                Image(systemName: template.iconName ?? "doc")
-                Text(template.displayName)
-            }
-            .padding(8)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
         }
     }
 }
