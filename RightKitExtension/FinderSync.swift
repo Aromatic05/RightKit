@@ -19,11 +19,11 @@ class FinderSync: FIFinderSync {
         // 包括外接磁盘、桌面、文档等所有位置
         setupDirectoryMonitoring()
         
-        // 监听配置更改通知
-        NotificationCenter.default.addObserver(
+        // 监听配置更改通知（使用 DistributedNotificationCenter 和正确的通知名）
+        DistributedNotificationCenter.default().addObserver(
             self,
             selector: #selector(configurationDidChange),
-            name: NSNotification.Name("RightKitConfigurationChanged"),
+            name: NSNotification.Name("com.aromatic.RightKit.configUpdated"),
             object: nil
         )
     }
@@ -52,11 +52,12 @@ class FinderSync: FIFinderSync {
     
     @objc private func configurationDidChange() {
         NSLog("RightKit: Configuration changed notification received")
-        // 配置更改时可以重新加载菜单或执行其他操作
+        // 配置更改时重新加载菜单
+        MenuBuilder.shared.reloadConfiguration()
     }
     
     deinit {
-        NotificationCenter.default.removeObserver(self)
+        DistributedNotificationCenter.default().removeObserver(self)
     }
     
     // MARK: - Primary Finder Sync protocol methods
