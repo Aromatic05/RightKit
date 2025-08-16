@@ -49,9 +49,9 @@ struct TemplateLibraryView: View {
                     // (修复第二步): 将 List 的 selection 绑定到本地的 @State 变量
                     List(allActions, id: \.self, selection: $localSelectedActionType) { actionType in
                         HStack {
-                            Image(systemName: actionTypeIcon(actionType))
+                            Image(systemName: ActionTypeUtils.icon(for: actionType))
                                 .foregroundColor(.accentColor)
-                            Text(actionTypeDisplayName(actionType))
+                            Text(ActionTypeUtils.displayName(for: actionType))
                         }
                         .contentShape(Rectangle())
                     }
@@ -169,34 +169,6 @@ struct TemplateLibraryView: View {
         // (修复第三步): 监听本地状态的变化，然后在这里更新 viewModel
         .onChange(of: localSelectedActionType) { newValue in
             viewModel.selectedActionType = newValue
-        }
-    }
-    
-    // ... private func ... (这部分无需改动)
-    // 操作类型显示名
-    private func actionTypeDisplayName(_ type: ActionType) -> String {
-        switch type {
-        case .createEmptyFile: return "新建空文件"
-        case .createFileFromTemplate: return "模板文件"
-        case .createFolder: return "新建文件夹"
-        case .openTerminal: return "打开终端"
-        case .copyFilePath: return "复制路径"
-        case .cutFile: return "剪切文件"
-        case .runShellScript: return "运行脚本"
-        case .separator: return "分隔线"
-        }
-    }
-    // 操作类型图标
-    private func actionTypeIcon(_ type: ActionType) -> String {
-        switch type {
-        case .createEmptyFile: return "doc"
-        case .createFileFromTemplate: return "doc.badge.plus"
-        case .createFolder: return "folder"
-        case .openTerminal: return "terminal"
-        case .copyFilePath: return "doc.on.doc"
-        case .cutFile: return "scissors"
-        case .runShellScript: return "play"
-        case .separator: return "minus"
         }
     }
 }

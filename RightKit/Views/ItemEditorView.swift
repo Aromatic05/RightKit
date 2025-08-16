@@ -63,13 +63,13 @@ struct MenuItemDetailEditor: View {
             }
             
             // 参数编辑（仅对某些动作类型显示）
-            if let action = item.action, shouldShowParameterEditor(for: action.type) {
+            if let action = item.action, ActionTypeUtils.shouldShowParameterEditor(for: action.type) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(parameterLabel(for: action.type))
+                    Text(ActionTypeUtils.parameterLabel(for: action.type))
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
-                    TextField(parameterPlaceholder(for: action.type), text: $editedParameter)
+                    TextField(ActionTypeUtils.parameterPlaceholder(for: action.type), text: $editedParameter)
                         .textFieldStyle(.roundedBorder)
                 }
             }
@@ -97,7 +97,7 @@ struct MenuItemDetailEditor: View {
                     if editedIcon != (item.icon ?? "") {
                         viewModel.updateMenuItem(item, icon: editedIcon.isEmpty ? nil : editedIcon)
                     }
-                    if let action = item.action, shouldShowParameterEditor(for: action.type), editedParameter != (action.parameter ?? "") {
+                    if let action = item.action, ActionTypeUtils.shouldShowParameterEditor(for: action.type), editedParameter != (action.parameter ?? "") {
                         viewModel.updateMenuItem(item, parameter: editedParameter)
                     }
                 }
@@ -114,41 +114,6 @@ struct MenuItemDetailEditor: View {
             editedName = newItem.name
             editedIcon = newItem.icon ?? ""
             editedParameter = newItem.action?.parameter ?? ""
-        }
-    }
-    
-    private func shouldShowParameterEditor(for actionType: ActionType) -> Bool {
-        switch actionType {
-        case .createEmptyFile, .createFileFromTemplate, .runShellScript:
-            return true
-        default:
-            return false
-        }
-    }
-    
-    private func parameterLabel(for actionType: ActionType) -> String {
-        switch actionType {
-        case .createEmptyFile:
-            return "文件扩展名"
-        case .createFileFromTemplate:
-            return "模板文件名"
-        case .runShellScript:
-            return "脚本命令"
-        default:
-            return "参数"
-        }
-    }
-    
-    private func parameterPlaceholder(for actionType: ActionType) -> String {
-        switch actionType {
-        case .createEmptyFile:
-            return "txt"
-        case .createFileFromTemplate:
-            return "template.txt"
-        case .runShellScript:
-            return "echo 'Hello World'"
-        default:
-            return "参数值"
         }
     }
 }

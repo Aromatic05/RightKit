@@ -39,8 +39,8 @@ struct MenuEditorView: View {
                         DispatchQueue.main.async {
                             if let actionType = viewModel.selectedActionType {
                                 let newItem = MenuItem(
-                                    name: actionTypeDisplayName(actionType),
-                                    icon: actionTypeIcon(actionType),
+                                    name: ActionTypeUtils.displayName(for: actionType),
+                                    icon: ActionTypeUtils.icon(for: actionType),
                                     action: Action(type: actionType, parameter: nil),
                                     children: nil
                                 )
@@ -209,8 +209,8 @@ struct MenuItemTreeView: View {
                                 DispatchQueue.main.async {
                                     if let actionType = viewModel.selectedActionType {
                                         let newItem = MenuItem(
-                                            name: actionTypeDisplayName(actionType),
-                                            icon: actionTypeIcon(actionType),
+                                            name: ActionTypeUtils.displayName(for: actionType),
+                                            icon: ActionTypeUtils.icon(for: actionType),
                                             action: Action(type: actionType, parameter: nil),
                                             children: nil
                                         )
@@ -308,31 +308,7 @@ struct MenuItemTreeView: View {
     }
 }
 
-// ActionType显示名和图标辅助方法
-private func actionTypeDisplayName(_ type: ActionType) -> String {
-    switch type {
-    case .createEmptyFile: return "新建空文件"
-    case .createFileFromTemplate: return "模板文件"
-    case .createFolder: return "新建文件夹"
-    case .openTerminal: return "打开终端"
-    case .copyFilePath: return "复制路径"
-    case .cutFile: return "剪切文件"
-    case .runShellScript: return "运行脚本"
-    case .separator: return "分隔线"
-    }
-}
-private func actionTypeIcon(_ type: ActionType) -> String {
-    switch type {
-    case .createEmptyFile: return "doc"
-    case .createFileFromTemplate: return "doc.badge.plus"
-    case .createFolder: return "folder"
-    case .openTerminal: return "terminal"
-    case .copyFilePath: return "doc.on.doc"
-    case .cutFile: return "scissors"
-    case .runShellScript: return "play"
-    case .separator: return "minus"
-    }
-}
+// Removed local utility functions: actionTypeDisplayName, actionTypeIcon
 
 #Preview {
     MenuEditorView()
