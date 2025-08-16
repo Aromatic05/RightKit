@@ -205,12 +205,12 @@ class AppViewModel: ObservableObject {
         addMenuItem(item, to: destination)
     }
     
-    func updateMenuItem(_ item: MenuItem, name: String? = nil, icon: String? = nil) {
-        updateMenuItemRecursive(item, name: name, icon: icon, in: &menuItems)
+    func updateMenuItem(_ item: MenuItem, name: String? = nil, icon: String? = nil, parameter: String? = nil) {
+        updateMenuItemRecursive(item, name: name, icon: icon, parameter: parameter, in: &menuItems)
         hasChanges = true
     }
     
-    private func updateMenuItemRecursive(_ item: MenuItem, name: String?, icon: String?, in items: inout [MenuItem]) {
+    private func updateMenuItemRecursive(_ item: MenuItem, name: String?, icon: String?, parameter: String?, in items: inout [MenuItem]) {
         for index in items.indices {
             if items[index].id == item.id {
                 if let name = name {
@@ -219,11 +219,16 @@ class AppViewModel: ObservableObject {
                 if let icon = icon {
                     items[index].icon = icon
                 }
+                if let parameter = parameter {
+                    if items[index].action != nil {
+                        items[index].action?.parameter = parameter
+                    }
+                }
                 return
             }
             
             if var children = items[index].children {
-                updateMenuItemRecursive(item, name: name, icon: icon, in: &children)
+                updateMenuItemRecursive(item, name: name, icon: icon, parameter: parameter, in: &children)
                 items[index].children = children
             }
         }

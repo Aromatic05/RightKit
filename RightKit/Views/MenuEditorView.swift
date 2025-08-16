@@ -271,6 +271,13 @@ struct MenuItemDetailEditor: View {
     @State private var editedIcon: String = ""
     @State private var editedParameter: String = ""
     
+    // 新增：追踪是否有变更
+    private var hasChanges: Bool {
+        editedName != item.name ||
+        editedIcon != (item.icon ?? "") ||
+        editedParameter != (item.action?.parameter ?? "")
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("编辑菜单项")
@@ -336,6 +343,23 @@ struct MenuItemDetailEditor: View {
                     .padding(.vertical, 4)
                     .background(.secondary.opacity(0.1))
                     .cornerRadius(6)
+            }
+            // 新增：保存按钮
+            HStack {
+                Spacer()
+                Button("保存") {
+                    if editedName != item.name && !editedName.isEmpty {
+                        viewModel.updateMenuItem(item, name: editedName)
+                    }
+                    if editedIcon != (item.icon ?? "") {
+                        viewModel.updateMenuItem(item, icon: editedIcon.isEmpty ? nil : editedIcon)
+                    }
+                    if let action = item.action, shouldShowParameterEditor(for: action.type), editedParameter != (action.parameter ?? "") {
+                        viewModel.updateMenuItem(item, parameter: editedParameter)
+                    }
+                }
+                .disabled(!hasChanges)
+                .buttonStyle(.borderedProminent)
             }
         }
         .onAppear {
