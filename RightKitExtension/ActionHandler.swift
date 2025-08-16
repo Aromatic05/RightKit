@@ -77,31 +77,45 @@ class ActionHandler {
     
     private func createFileFromTemplate(extension fileExtension: String, in targetURL: URL?) {
         let targetDirectory = targetURL ?? URL(fileURLWithPath: NSHomeDirectory())
-        
-        // 根据扩展名生成默认文件名
         let defaultFileName = generateDefaultFileName(for: fileExtension)
-        
-        // 生成唯一的文件名，处理重复文件
         let uniqueFileURL = generateUniqueFileURL(baseName: defaultFileName, in: targetDirectory)
-        
         NSLog("RightKit: Creating file from template '%@' in directory: %@", uniqueFileURL.lastPathComponent, targetDirectory.path)
-        
-        // 获取模板内容
-        let templateContent = generateTemplateContent(for: fileExtension, fileName: uniqueFileURL.deletingPathExtension().lastPathComponent)
-        
-        // 创建文件
-        let fileManager = FileManager.default
-        let success = fileManager.createFile(atPath: uniqueFileURL.path, contents: templateContent.data(using: .utf8), attributes: nil)
-        
-        if success {
-            NSLog("RightKit: Successfully created file from template: %@", uniqueFileURL.lastPathComponent)
-            
-            // 激活重命名功能
+        let templateFileName = "template.\(fileExtension)"
+        var templateCopied = false
+        if let templateFolderURL = TemplateManager.getTemplateFolderURL(),
+           templateFolderURL.startAccessingSecurityScopedResource() {
+            defer { templateFolderURL.stopAccessingSecurityScopedResource() }
+            let templateFileURL = templateFolderURL.appendingPathComponent(templateFileName)
+            if FileManager.default.fileExists(atPath: templateFileURL.path) {
+                do {
+                    try FileManager.default.copyItem(at: templateFileURL, to: uniqueFileURL)
+                    NSLog("RightKit: Successfully copied template file from: %@", templateFileName)
+                    templateCopied = true
+                } catch {
+                    NSLog("RightKit: Error copying template file: %@", error.localizedDescription)
+                }
+            } else {
+                NSLog("RightKit: Template file does not exist: %@", templateFileName)
+            }
+        } else {
+            NSLog("RightKit: Template folder not configured or cannot access")
+        }
+        if templateCopied {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 self.activateFileRename(for: uniqueFileURL)
             }
         } else {
-            NSLog("RightKit: Failed to create file from template: %@", uniqueFileURL.lastPathComponent)
+            NSLog("RightKit: Template file not found, falling back to creating empty file")
+            let fileManager = FileManager.default
+            let success = fileManager.createFile(atPath: uniqueFileURL.path, contents: nil, attributes: nil)
+            if success {
+                NSLog("RightKit: Successfully created empty file as fallback: %@", uniqueFileURL.lastPathComponent)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    self.activateFileRename(for: uniqueFileURL)
+                }
+            } else {
+                NSLog("RightKit: Failed to create file: %@", uniqueFileURL.lastPathComponent)
+            }
         }
     }
     
@@ -304,21 +318,6 @@ class ActionHandler {
             return "新建CSS文件.css"
         default:
             return "新建文件.\(fileExtension)"
-        }
-    }
-    
-    /// 根据模板扩展名生成文件内容
-    private func generateTemplateContent(for fileExtension: String, fileName: String) -> String {
-        // 根据扩展名返回对应的模板内容
-        switch fileExtension {
-        case "swift":
-            return "// 这是一个 Swift 文件模板\n\nimport Foundation\n\n// TODO: 在此处添加代码\n"
-        case "txt":
-            return "这是一个文本文件模板。\n\n请在此处添加内容。"
-        case "md":
-            return "# 这是一个 Markdown 文件模板\n\n请在此处添加内容。"
-        default:
-            return "// 未知文件类型，请手动添加内容。"
         }
     }
 }
