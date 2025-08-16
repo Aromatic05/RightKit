@@ -13,8 +13,11 @@ struct TemplateLibraryView: View {
     // (修复第一步): 创建一个本地的 @State 变量来管理 List 的选择
     @State private var localSelectedActionType: ActionType?
 
-    // 获取所有操作类型
-    private var allActions: [ActionType] {
+    // 新增本地选中索引
+    @State private var selectedActionIndex: Int? = nil
+
+    // 获取所有操作类型（最后一个 nil 表示“子菜单”）
+    private var allActions: [ActionType?] {
         return [
             .createEmptyFile,
             .createFileFromTemplate,
@@ -23,7 +26,8 @@ struct TemplateLibraryView: View {
             .copyFilePath,
             .cutFile,
             .runShellScript,
-            .separator
+            .separator,
+            nil // nil 表示“子菜单”
         ]
     }
     
@@ -47,11 +51,18 @@ struct TemplateLibraryView: View {
                 isExpanded: $showActionLibrary,
                 content: {
                     // (修复第二步): 将 List 的 selection 绑定到本地的 @State 变量
-                    List(allActions, id: \.self, selection: $localSelectedActionType) { actionType in
+                    List(allActions.indices, id: \ .self, selection: $selectedActionIndex) { idx in
+                        let actionType = allActions[idx]
                         HStack {
-                            Image(systemName: ActionTypeUtils.icon(for: actionType))
-                                .foregroundColor(.accentColor)
-                            Text(ActionTypeUtils.displayName(for: actionType))
+                            if let type = actionType {
+                                Image(systemName: ActionTypeUtils.icon(for: type))
+                                    .foregroundColor(.accentColor)
+                                Text(ActionTypeUtils.displayName(for: type))
+                            } else {
+                                Image(systemName: "list.bullet")
+                                    .foregroundColor(.accentColor)
+                                Text("子菜单")
+                            }
                         }
                         .contentShape(Rectangle())
                     }
@@ -164,11 +175,17 @@ struct TemplateLibraryView: View {
         }
         // (推荐): 在视图出现时，用 viewModel 的值初始化本地状态
         .onAppear {
-            localSelectedActionType = viewModel.selectedActionType
+            if let type = viewModel.selectedActionType {
+                selectedActionIndex = allActions.firstIndex(where: { $0 == type })
+            } else {
+                selectedActionIndex = allActions.firstIndex(where: { $0 == nil })
+            }
         }
         // (修复第三步): 监听本地状态的变化，然后在这里更新 viewModel
-        .onChange(of: localSelectedActionType) {
-            viewModel.selectedActionType = localSelectedActionType
+        .onChange(of: selectedActionIndex) {
+            if let idx = selectedActionIndex {
+                viewModel.selectedActionType = allActions[idx]
+            }
         }
     }
 }

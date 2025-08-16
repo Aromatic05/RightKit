@@ -37,7 +37,16 @@ struct MenuEditorView: View {
                 HStack(spacing: 8) {
                     Button("添加子项") {
                         DispatchQueue.main.async {
-                            if let actionType = viewModel.selectedActionType {
+                            if viewModel.selectedActionType == nil {
+                                // 添加子菜单
+                                let newItem = MenuItem(
+                                    name: "新子菜单",
+                                    icon: "list.bullet",
+                                    action: nil,
+                                    children: []
+                                )
+                                viewModel.addMenuItem(newItem)
+                            } else if let actionType = viewModel.selectedActionType {
                                 let newItem = MenuItem(
                                     name: ActionTypeUtils.displayName(for: actionType),
                                     icon: ActionTypeUtils.icon(for: actionType),

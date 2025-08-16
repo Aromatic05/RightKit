@@ -86,11 +86,21 @@ struct MenuItemTreeView: View {
                         if hasChildren {
                             Button {
                                 DispatchQueue.main.async {
-                                    if let actionType = viewModel.selectedActionType {
+                                    let selectedType = viewModel.selectedActionType
+                                    if selectedType == nil {
+                                        // 子菜单：action 为 nil，children 为空数组
                                         let newItem = MenuItem(
-                                            name: ActionTypeUtils.displayName(for: actionType),
-                                            icon: ActionTypeUtils.icon(for: actionType),
-                                            action: Action(type: actionType, parameter: nil),
+                                            name: "新子菜单",
+                                            icon: "list.bullet",
+                                            action: nil,
+                                            children: []
+                                        )
+                                        viewModel.addMenuItem(newItem, to: item)
+                                    } else if let type = selectedType {
+                                        let newItem = MenuItem(
+                                            name: ActionTypeUtils.displayName(for: type),
+                                            icon: ActionTypeUtils.icon(for: type),
+                                            action: Action(type: type, parameter: nil),
                                             children: nil
                                         )
                                         viewModel.addMenuItem(newItem, to: item)
@@ -109,7 +119,7 @@ struct MenuItemTreeView: View {
                                     .foregroundColor(.accentColor)
                             }
                             .buttonStyle(.borderless)
-                            .help("添加子项")
+                            .help("添加子项或子菜单")
                         }
                         
                         Button {
