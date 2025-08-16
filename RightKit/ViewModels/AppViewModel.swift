@@ -134,20 +134,28 @@ class AppViewModel: ObservableObject {
     
     func addMenuItem(_ item: MenuItem, to parent: MenuItem? = nil) {
         if let parent = parent {
-            // 添加到指定父菜单的子项
-            if let index = findMenuItemIndex(parent) {
-                if menuItems[index].children == nil {
-                    menuItems[index].children = []
-                }
-                menuItems[index].children?.append(item)
-            }
+            addMenuItemRecursive(item, to: parent, in: &menuItems)
         } else {
-            // 添加到根级别
             menuItems.append(item)
         }
         hasChanges = true
     }
-    
+
+    private func addMenuItemRecursive(_ item: MenuItem, to parent: MenuItem, in items: inout [MenuItem]) {
+        for index in items.indices {
+            if items[index].id == parent.id {
+                if items[index].children == nil {
+                    items[index].children = []
+                }
+                items[index].children?.append(item)
+                return
+            }
+            if items[index].children != nil {
+                addMenuItemRecursive(item, to: parent, in: &items[index].children!)
+            }
+        }
+    }
+
     func removeMenuItem(_ item: MenuItem) {
         removeMenuItemRecursive(item, from: &menuItems)
         hasChanges = true
@@ -259,6 +267,24 @@ class AppViewModel: ObservableObject {
             return "doc.text"
         default:
             return "doc"
+        }
+    }
+    
+    func initializeChildren(for item: MenuItem) {
+        initializeChildrenRecursive(for: item, in: &menuItems)
+    }
+    private func initializeChildrenRecursive(for item: MenuItem, in items: inout [MenuItem]) {
+        for index in items.indices {
+            if items[index].id == item.id {
+                if items[index].children == nil {
+                    items[index].children = []
+                    hasChanges = true
+                }
+                return
+            }
+            if items[index].children != nil {
+                initializeChildrenRecursive(for: item, in: &items[index].children!)
+            }
         }
     }
 }

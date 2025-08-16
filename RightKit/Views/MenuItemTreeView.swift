@@ -45,14 +45,7 @@ struct MenuItemTreeView: View {
                     Button {
                         withAnimation(.easeInOut(duration: 0.2)) {
                             if item.children == nil {
-                                // 初始化 children 为空数组
-                                viewModel.addMenuItem(MenuItem(
-                                    id: item.id,
-                                    name: item.name,
-                                    icon: item.icon,
-                                    action: item.action,
-                                    children: []
-                                ), to: nil)
+                                viewModel.initializeChildren(for: item)
                             }
                             if isExpanded {
                                 expandedItems.remove(item.id)
