@@ -62,41 +62,6 @@ extension MenuItem: Identifiable {
     var id: String {
         return "\(name)-\(icon ?? "")-\(action?.type.rawValue ?? "")"
     }
-    /// 获取菜单项的显示图标
-    var displayIcon: String {
-        if let icon = icon {
-            return icon
-        }
-        
-        // 根据动作类型返回默认图标
-        if let action = action {
-            switch action.type {
-            case .createEmptyFile:
-                return "doc"
-            case .createFileFromTemplate:
-                return "doc.badge.plus"
-            case .createFolder:
-                return "folder.badge.plus"
-            case .openTerminal:
-                return "terminal"
-            case .copyFilePath:
-                return "doc.on.clipboard"
-            case .cutFile:
-                return "scissors"
-            case .runShellScript:
-                return "terminal.fill"
-            case .separator:
-                return "minus"
-            }
-        }
-        
-        // 如果有子菜单，返回文件夹图标
-        if children != nil && !(children?.isEmpty ?? true) {
-            return "folder"
-        }
-        
-        return "questionmark"
-    }
     
     /// 获取菜单项的类型描述
     var typeDescription: String {

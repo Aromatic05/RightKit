@@ -149,7 +149,7 @@ struct MenuItemTreeView: View {
                 }
                 
                 // 图标
-                Image(systemName: item.displayIcon)
+                Image(systemName: item.icon ?? "questionmark")
                     .foregroundColor(iconColor)
                     .frame(width: 20)
                 
@@ -343,7 +343,7 @@ struct MenuItemDetailEditor: View {
             editedIcon = item.icon ?? ""
             editedParameter = item.action?.parameter ?? ""
         }
-        .onChange(of: item) { newItem in
+        .onChange(of: item) { newItem, _ in
             editedName = newItem.name
             editedIcon = newItem.icon ?? ""
             editedParameter = newItem.action?.parameter ?? ""
