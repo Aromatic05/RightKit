@@ -70,25 +70,25 @@ class ConfigurationManager {
                 MenuItem(
                     name: "空白文本文件",
                     icon: "doc.text",
-                    action: Action(type: .createEmptyFile, parameter: "新建文件.txt"),
+                    action: Action(type: .createEmptyFile, parameter: "txt"),
                     children: nil
                 ),
                 MenuItem(
                     name: "Swift 文件",
                     icon: "swift",
-                    action: Action(type: .createEmptyFile, parameter: "新建文件.swift"),
+                    action: Action(type: .createEmptyFile, parameter: "swift"),
                     children: nil
                 ),
                 MenuItem(
                     name: "Markdown 文件",
                     icon: "doc.richtext",
-                    action: Action(type: .createEmptyFile, parameter: "新建文档.md"),
+                    action: Action(type: .createEmptyFile, parameter: "md"),
                     children: nil
                 ),
                 MenuItem(
                     name: "JSON 文件",
                     icon: "doc.text.below.ecg",
-                    action: Action(type: .createEmptyFile, parameter: "新建文件.json"),
+                    action: Action(type: .createEmptyFile, parameter: "json"),
                     children: nil
                 ),
                 MenuItem(
@@ -99,13 +99,13 @@ class ConfigurationManager {
                         MenuItem(
                             name: "Swift 类模板",
                             icon: "swift",
-                            action: Action(type: .createFileFromTemplate, parameter: "SwiftClass.swift"),
+                            action: Action(type: .createFileFromTemplate, parameter: "swift"),
                             children: nil
                         ),
                         MenuItem(
                             name: "README 模板",
                             icon: "doc.richtext",
-                            action: Action(type: .createFileFromTemplate, parameter: "README.md"),
+                            action: Action(type: .createFileFromTemplate, parameter: "md"),
                             children: nil
                         )
                     ]
