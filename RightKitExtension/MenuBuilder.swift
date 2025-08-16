@@ -12,43 +12,71 @@ import FinderSync
 class MenuBuilder {
     static let shared = MenuBuilder()
     
+    private var cachedMenuItems: [MenuItem] = []
+    private var titleToActionMap: [String: String] = [:]
+    private var needsReload = true
+    
     private init() {}
     
-    // 使用菜单标题作为键的动作映射表 - 这在菜单重建时更稳定
-    private var titleToActionMap: [String: String] = [:]
+    // MARK: - Configuration Management
+    
+    func reloadConfiguration() {
+        NSLog("RightKit MenuBuilder: Reloading configuration...")
+        needsReload = true
+        titleToActionMap.removeAll()
+    }
+    
+    private func loadConfigurationIfNeeded() {
+        guard needsReload else { return }
+        
+        do {
+            let configuration = try ConfigurationManager.shared.loadConfiguration()
+            cachedMenuItems = configuration.items
+            needsReload = false
+            NSLog("RightKit MenuBuilder: Loaded %d menu items", cachedMenuItems.count)
+        } catch {
+            NSLog("RightKit MenuBuilder: Failed to load configuration: \(error)")
+            cachedMenuItems = []
+        }
+    }
     
     // MARK: - Menu Building
     
     func buildMenu(for menuKind: FIMenuKind) -> NSMenu {
         NSLog("RightKit: Building menu for menuKind: %d", menuKind.rawValue)
         
-        let menu = NSMenu(title: "")
+        loadConfigurationIfNeeded()
         
-        // 清空之前的映射
+        let menu = NSMenu(title: "RightKit")
         titleToActionMap.removeAll()
         
-        // 加载配置并构建动态菜单
-        do {
-            let config = try ConfigurationManager.shared.loadConfiguration()
-            NSLog("RightKit: Loaded configuration with %d menu items", config.items.count)
-            
-            for menuItem in config.items {
-                let nsMenuItem = buildMenuItem(from: menuItem)
-                menu.addItem(nsMenuItem)
-            }
-            
-            if config.items.isEmpty {
-                let emptyItem = NSMenuItem(title: "暂无菜单项", action: nil, keyEquivalent: "")
-                emptyItem.isEnabled = false
-                menu.addItem(emptyItem)
-            }
-            
-        } catch {
-            NSLog("RightKit: Error loading configuration: %@", error.localizedDescription)
-            let errorItem = NSMenuItem(title: "加载配置失败", action: nil, keyEquivalent: "")
-            errorItem.isEnabled = false
-            menu.addItem(errorItem)
+        for menuItem in cachedMenuItems {
+            let nsMenuItem = buildMenuItem(from: menuItem)
+            menu.addItem(nsMenuItem)
         }
+        
+        // 如果没有菜单项，显示提示
+        if cachedMenuItems.isEmpty {
+            let emptyItem = NSMenuItem(title: "请在RightKit应用中配置菜单", action: nil, keyEquivalent: "")
+            emptyItem.isEnabled = false
+            menu.addItem(emptyItem)
+        }
+        
+        return menu
+    }
+    
+    func buildToolbarMenu() -> NSMenu {
+        NSLog("RightKit: Building toolbar menu")
+        
+        let menu = NSMenu(title: "RightKit")
+        
+        let configItem = NSMenuItem(title: "打开RightKit配置", action: #selector(FinderSync.openConfigApp(_:)), keyEquivalent: "")
+        menu.addItem(configItem)
+        
+        menu.addItem(NSMenuItem.separator())
+        
+        let aboutItem = NSMenuItem(title: "关于RightKit", action: #selector(FinderSync.showAbout(_:)), keyEquivalent: "")
+        menu.addItem(aboutItem)
         
         return menu
     }

@@ -106,4 +106,28 @@ class FinderSync: FIFinderSync {
             NSLog("RightKit: No action found for menu item title")
         }
     }
+    
+    // MARK: - Additional Menu Actions
+    
+    @objc func openConfigApp(_ sender: NSMenuItem) {
+        NSLog("Opening RightKit configuration app")
+        
+        // 打开主应用
+        let bundleIdentifier = "com.aromatic.RightKit"
+        NSWorkspace.shared.launchApplication(withBundleIdentifier: bundleIdentifier,
+                                           options: [],
+                                           additionalEventParamDescriptor: nil,
+                                           launchIdentifier: nil)
+    }
+    
+    @objc func showAbout(_ sender: NSMenuItem) {
+        NSLog("Showing RightKit about dialog")
+        
+        let alert = NSAlert()
+        alert.messageText = "RightKit"
+        alert.informativeText = "macOS 右键菜单增强工具\n版本 1.0\n\n© 2025 Aromatic"
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: "确定")
+        alert.runModal()
+    }
 }

@@ -22,6 +22,9 @@ class ConfigurationManager {
     /// 配置文件名
     static let configFileName = "menu.json"
     
+    /// 通知名称
+    static let configUpdateNotificationName = "com.aromatic.RightKit.configUpdated"
+    
     /// 获取App Group容器URL
     static var containerURL: URL? {
         return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID)
@@ -35,6 +38,16 @@ class ConfigurationManager {
             .appendingPathComponent("Application Support")
             .appendingPathComponent("RightKit")
             .appendingPathComponent(configFileName)
+    }
+    
+    /// 获取模板目录URL
+    static var templatesDirectoryURL: URL? {
+        guard let containerURL = containerURL else { return nil }
+        return containerURL
+            .appendingPathComponent("Library")
+            .appendingPathComponent("Application Support")
+            .appendingPathComponent("RightKit")
+            .appendingPathComponent("Templates")
     }
     
     /// 初始化默认配置
@@ -164,9 +177,22 @@ class ConfigurationManager {
             let data = try encoder.encode(configuration)
             try data.write(to: configURL)
             NSLog("Configuration saved successfully to: \(configURL.path)")
+            
+            // 发送配置更新通知给FinderSync扩展
+            sendConfigurationUpdateNotification()
         } catch {
             NSLog("Error saving configuration: \(error)")
         }
+    }
+    
+    /// 发送配置更新通知
+    private static func sendConfigurationUpdateNotification() {
+        DistributedNotificationCenter.default().postNotificationName(
+            Notification.Name(configUpdateNotificationName),
+            object: nil,
+            deliverImmediately: true
+        )
+        NSLog("Sent configuration update notification")
     }
     
     /// 实例方法：加载配置
