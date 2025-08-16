@@ -62,9 +62,6 @@ extension MenuItem: Identifiable {
     var id: String {
         return "\(name)-\(icon ?? "")-\(action?.type.rawValue ?? "")"
     }
-}
-
-extension MenuItem {
     /// 获取菜单项的显示图标
     var displayIcon: String {
         if let icon = icon {

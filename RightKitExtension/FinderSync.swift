@@ -111,13 +111,19 @@ class FinderSync: FIFinderSync {
     
     @objc func openConfigApp(_ sender: NSMenuItem) {
         NSLog("Opening RightKit configuration app")
-        
-        // 打开主应用
         let bundleIdentifier = "com.aromatic.RightKit"
-        NSWorkspace.shared.launchApplication(withBundleIdentifier: bundleIdentifier,
-                                           options: [],
-                                           additionalEventParamDescriptor: nil,
-                                           launchIdentifier: nil)
+        if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier) {
+            let configuration = NSWorkspace.OpenConfiguration()
+            NSWorkspace.shared.openApplication(at: appURL, configuration: configuration) { app, error in
+                if let error = error {
+                    NSLog("Failed to open RightKit configuration app: %@", error.localizedDescription)
+                } else {
+                    NSLog("RightKit configuration app opened successfully")
+                }
+            }
+        } else {
+            NSLog("Could not find RightKit app with bundle identifier: %@", bundleIdentifier)
+        }
     }
     
     @objc func showAbout(_ sender: NSMenuItem) {
