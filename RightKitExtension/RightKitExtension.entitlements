@@ -4,13 +4,26 @@
 <dict>
 	<key>com.apple.security.app-sandbox</key>
 	<true/>
+	<key>com.apple.security.files.user-selected.read-only</key>
+	<true/>
 	<key>com.apple.security.application-groups</key>
 	<array>
 		<string>group.Aromatic.RightKit</string>
 	</array>
-	<key>com.apple.security.files.downloads.read-write</key>
+	<key>com.apple.security.files.all</key>
 	<true/>
-	<key>com.apple.security.files.user-selected.read-write</key>
+	<key>com.apple.security.files.bookmarks.app-scope</key>
 	<true/>
+	<key>com.apple.security.files.bookmarks.document-scope</key>
+	<true/>
+	<key>com.apple.security.temporary-exception.files.home.read-write</key>
+	<true/>
+	<key>com.apple.security.temporary-exception.files.absolute-path.read-write</key>
+	<array>
+		<string>/</string>
+		<string>$(HOME)</string>
+		<string>$(HOME)/Documents</string>
+		<string>$(HOME)/.config</string>
+	</array>
 </dict>
 </plist>
