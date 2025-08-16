@@ -36,27 +36,23 @@ struct MenuEditorView: View {
                 
                 HStack(spacing: 8) {
                     Button("添加子项") {
-                        print("[DEBUG] 添加子项按钮点击, 当前选中操作: \(String(describing: viewModel.selectedActionType))")
                         DispatchQueue.main.async {
                             if let actionType = viewModel.selectedActionType {
-                                print("[DEBUG] 创建新菜单项, 类型: \(actionType)")
                                 let newItem = MenuItem(
                                     name: actionTypeDisplayName(actionType),
                                     icon: actionTypeIcon(actionType),
                                     action: Action(type: actionType, parameter: nil),
                                     children: nil
                                 )
-                                if let parent = findMenuItem(by: selectedItemId, in: viewModel.menuItems) {
-                                    print("[DEBUG] 添加到父菜单: \(parent.name)")
-                                    viewModel.addMenuItem(newItem, to: parent)
-                                    expandedItems.insert(parent.id)
-                                } else {
-                                    print("[DEBUG] 添加到根菜单")
-                                    viewModel.addMenuItem(newItem)
-                                }
+                                viewModel.addMenuItem(newItem)
                             } else {
-                                print("[DEBUG] 未选中操作类型, 添加默认子菜单")
-                                viewModel.addSubmenu()
+                                let newItem = MenuItem(
+                                    name: "新项目",
+                                    icon: "doc",
+                                    action: Action(type: .createEmptyFile, parameter: "txt"),
+                                    children: nil
+                                )
+                                viewModel.addMenuItem(newItem)
                             }
                         }
                     }
@@ -210,10 +206,8 @@ struct MenuItemTreeView: View {
                     HStack(spacing: 4) {
                         if hasChildren {
                             Button {
-                                print("[DEBUG] 悬停加号点击, 当前选中操作: \(String(describing: viewModel.selectedActionType))")
                                 DispatchQueue.main.async {
                                     if let actionType = viewModel.selectedActionType {
-                                        print("[DEBUG] 创建新菜单项, 类型: \(actionType)")
                                         let newItem = MenuItem(
                                             name: actionTypeDisplayName(actionType),
                                             icon: actionTypeIcon(actionType),
@@ -222,7 +216,6 @@ struct MenuItemTreeView: View {
                                         )
                                         viewModel.addMenuItem(newItem, to: item)
                                     } else {
-                                        print("[DEBUG] 未选中操作类型, 添加默认新项目")
                                         let newItem = MenuItem(
                                             name: "新项目",
                                             icon: "doc",
