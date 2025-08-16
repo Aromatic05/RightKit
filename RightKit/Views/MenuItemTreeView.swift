@@ -88,43 +88,45 @@ struct MenuItemTreeView: View {
                     .cornerRadius(4)
                 
                 // 悬停时的操作按钮
-                if isHovered && isSubmenu {
+                if isHovered {
                     HStack(spacing: 4) {
-                        Button {
-                            DispatchQueue.main.async {
-                                let selectedType = viewModel.selectedActionType
-                                if selectedType == nil {
-                                    let newItem = MenuItem(
-                                        name: "新子菜单",
-                                        icon: "list.bullet",
-                                        action: nil,
-                                        children: nil
-                                    )
-                                    viewModel.addMenuItem(newItem, to: item)
-                                } else if let type = selectedType {
-                                    let newItem = MenuItem(
-                                        name: ActionTypeUtils.displayName(for: type),
-                                        icon: ActionTypeUtils.icon(for: type),
-                                        action: Action(type: type, parameter: nil),
-                                        children: nil
-                                    )
-                                    viewModel.addMenuItem(newItem, to: item)
-                                } else {
-                                    let newItem = MenuItem(
-                                        name: "新项目",
-                                        icon: "doc",
-                                        action: Action(type: .createEmptyFile, parameter: "txt"),
-                                        children: nil
-                                    )
-                                    viewModel.addMenuItem(newItem, to: item)
+                        if isSubmenu {
+                            Button {
+                                DispatchQueue.main.async {
+                                    let selectedType = viewModel.selectedActionType
+                                    if selectedType == nil {
+                                        let newItem = MenuItem(
+                                            name: "新子菜单",
+                                            icon: "list.bullet",
+                                            action: nil,
+                                            children: nil
+                                        )
+                                        viewModel.addMenuItem(newItem, to: item)
+                                    } else if let type = selectedType {
+                                        let newItem = MenuItem(
+                                            name: ActionTypeUtils.displayName(for: type),
+                                            icon: ActionTypeUtils.icon(for: type),
+                                            action: Action(type: type, parameter: nil),
+                                            children: nil
+                                        )
+                                        viewModel.addMenuItem(newItem, to: item)
+                                    } else {
+                                        let newItem = MenuItem(
+                                            name: "新项目",
+                                            icon: "doc",
+                                            action: Action(type: .createEmptyFile, parameter: "txt"),
+                                            children: nil
+                                        )
+                                        viewModel.addMenuItem(newItem, to: item)
+                                    }
                                 }
+                            } label: {
+                                Image(systemName: "plus")
+                                    .foregroundColor(.accentColor)
                             }
-                        } label: {
-                            Image(systemName: "plus")
-                                .foregroundColor(.accentColor)
+                            .buttonStyle(.borderless)
+                            .help("添加子项或子菜单")
                         }
-                        .buttonStyle(.borderless)
-                        .help("添加子项或子菜单")
                         Button {
                             viewModel.removeMenuItem(item)
                             if selectedItemId == item.id {
