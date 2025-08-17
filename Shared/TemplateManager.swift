@@ -432,7 +432,7 @@ class TemplateManager {
         return currentURL
     }
     
-    /// 初始化模板文件夹（强制清理旧配置并弹窗选择）
+    /// 初始化模板文件夹（检查配置状态，仅在未配置时弹窗）
     static func initializeTemplateFolder() {
         NSLog("Initializing template folder...")
         
@@ -452,6 +452,32 @@ class TemplateManager {
                 }
             }
         }
+    }
+    
+    /// 选择模板文件夹（总是弹窗，用于UI中的选择/更改按钮）
+    static func selectTemplateFolderForUI(completion: @escaping (Bool) -> Void = { _ in }) {
+        NSLog("UI requested template folder selection...")
+        
+        DispatchQueue.main.async {
+            selectTemplateFolder { success in
+                if success {
+                    NSLog("User selected new template folder from UI")
+                    // 发送通知让UI更新
+                    NotificationCenter.default.post(
+                        name: NSNotification.Name("TemplateFolderChanged"),
+                        object: nil
+                    )
+                } else {
+                    NSLog("User cancelled template folder selection from UI")
+                }
+                completion(success)
+            }
+        }
+    }
+    
+    /// 检查模板文件夹是否已配置
+    static func isTemplateFolderConfigured() -> Bool {
+        return getTemplateFolderURL() != nil
     }
     
     /// 强制重新初始化到用户选择的目录（弹窗选择）
