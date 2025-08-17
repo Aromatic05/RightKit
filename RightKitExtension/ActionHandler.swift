@@ -40,7 +40,7 @@ class ActionHandler {
         case "copyFilePath":
             copyFilePath(targetURL: targetURL, selectedItems: selectedItems)
         case "cutFile":
-            cutFile(selectedItems: selectedItems)
+            cutOrPaste(targetURL: targetURL, selectedItems: selectedItems)
         default:
             NSLog("RightKit: Unknown action type: %@", actionType)
         }
@@ -193,41 +193,6 @@ class ActionHandler {
         NSLog("RightKit: Successfully copied %d path(s) to clipboard", pathsToCopy.count)
     }
     
-    private func cutFile(selectedItems: [URL]) {
-        guard !selectedItems.isEmpty else {
-            NSLog("RightKit: No files selected for cutting")
-            return
-        }
-        
-        NSLog("RightKit: Cutting %d file(s)", selectedItems.count)
-        
-        // 获取系统剪贴板
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        
-        // 创建文件URL数组用于剪贴板
-        var fileURLs: [URL] = []
-        var filePaths: [String] = []
-        
-        for url in selectedItems {
-            fileURLs.append(url)
-            filePaths.append(url.path)
-        }
-        
-        // 设置剪贴板内容 - 使用多种格式以确保兼容性
-        pasteboard.setPropertyList(filePaths, forType: .fileURL)
-        
-        // 设置剪切操作标记 (用于标识这是剪切而不是复制)
-        let cutFlag = Data([1]) // 1表示剪切，0表示复制
-        pasteboard.setData(cutFlag, forType: NSPasteboard.PasteboardType("com.apple.pasteboard.promised-file-content-type"))
-        
-        // 记录要剪切的文件路径用于后续移动操作
-        UserDefaults.standard.set(filePaths, forKey: "RightKit.CutFiles")
-        UserDefaults.standard.synchronize()
-        
-        NSLog("RightKit: Successfully cut files to clipboard: %@", filePaths.joined(separator: ", "))
-    }
-    
     // MARK: - Helper Methods
     
     /// 生成唯一的文件URL，处理重复文件名
@@ -260,6 +225,100 @@ class ActionHandler {
         } while fileManager.fileExists(atPath: uniqueURL.path)
         
         return uniqueURL
+    }
+    
+    // MARK: - Cut / Paste
+    
+    /// 切换剪切/粘贴：有待粘贴则执行粘贴，否则开始剪切
+    private func cutOrPaste(targetURL: URL?, selectedItems: [URL]) {
+        if CutPasteState.shared.hasPendingCut() {
+            pasteFiles(to: targetURL)
+        } else {
+            beginCut(selectedItems: selectedItems)
+        }
+    }
+    
+    /// 开始剪切：记录状态并写入粘贴板标记
+    private func beginCut(selectedItems: [URL]) {
+        guard !selectedItems.isEmpty else {
+            NSLog("RightKit: No files selected for cutting")
+            return
+        }
+        CutPasteState.shared.beginCut(urls: selectedItems)
+        NSLog("RightKit: Cut set with %d item(s)", selectedItems.count)
+    }
+    
+    /// 粘贴：将待剪切文件移动到目标目录，处理冲突与跨卷
+    private func pasteFiles(to targetURL: URL?) {
+        let pending = CutPasteState.shared.pendingCutURLs()
+        guard !pending.isEmpty else {
+            NSLog("RightKit: No pending cut to paste")
+            return
+        }
+        let destDir = resolvePasteDestination(targetURL)
+        NSLog("RightKit: Pasting %d item(s) to: %@", pending.count, destDir.path)
+        
+        var movedTargets: [URL] = []
+        for src in pending {
+            do {
+                let dest = makeUniqueDestination(for: src, in: destDir)
+                try moveItemSmart(from: src, to: dest)
+                movedTargets.append(dest)
+                NSLog("RightKit: Moved '%@' -> '%@'", src.lastPathComponent, dest.lastPathComponent)
+            } catch {
+                NSLog("RightKit: Paste failed for '%@': %@", src.path, error.localizedDescription)
+            }
+        }
+        
+        // 清除剪切状态
+        CutPasteState.shared.clear()
+        
+        // 在 Finder 中选中粘贴后的项目
+        if let first = movedTargets.first {
+            let root = first.deletingLastPathComponent().path
+            for url in movedTargets {
+                NSWorkspace.shared.selectFile(url.path, inFileViewerRootedAtPath: root)
+            }
+        }
+    }
+    
+    private func resolvePasteDestination(_ targetURL: URL?) -> URL {
+        let fm = FileManager.default
+        var dir = targetURL ?? URL(fileURLWithPath: NSHomeDirectory())
+        var isDir: ObjCBool = false
+        if fm.fileExists(atPath: dir.path, isDirectory: &isDir), !isDir.boolValue {
+            dir = dir.deletingLastPathComponent()
+        }
+        return dir
+    }
+    
+    private func makeUniqueDestination(for source: URL, in directory: URL) -> URL {
+        let fm = FileManager.default
+        var isDir: ObjCBool = false
+        fm.fileExists(atPath: source.path, isDirectory: &isDir)
+        let baseName = source.lastPathComponent
+        if isDir.boolValue {
+            return generateUniqueFolderURL(baseName: baseName, in: directory)
+        } else {
+            return generateUniqueFileURL(baseName: baseName, in: directory)
+        }
+    }
+    
+    /// Move with cross-volume fallback (copy+remove)
+    private func moveItemSmart(from src: URL, to dst: URL) throws {
+        let fm = FileManager.default
+        // If same parent directory, moving to new name is a rename; allow unique name already handled.
+        do {
+            try fm.moveItem(at: src, to: dst)
+        } catch {
+            // Try copy and delete as a fallback (e.g., EXDEV)
+            do {
+                try fm.copyItem(at: src, to: dst)
+                try fm.removeItem(at: src)
+            } catch {
+                throw error
+            }
+        }
     }
     
     /// 生成唯一的文件夹URL，处理重复文件夹名

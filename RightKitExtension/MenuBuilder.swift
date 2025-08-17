@@ -82,22 +82,28 @@ class MenuBuilder {
     }
     
     private func buildMenuItem(from menuItem: MenuItem) -> NSMenuItem {
-        let nsMenuItem = NSMenuItem(title: menuItem.name, action: #selector(FinderSync.menuItemClicked(_:)), keyEquivalent: "")
+        // Determine dynamic title for Cut/Paste toggle
+        var displayedTitle = menuItem.name
+        if let action = menuItem.action, action.type == .cutFile {
+            displayedTitle = CutPasteState.shared.hasPendingCut() ? "粘贴文件" : "剪切文件"
+        }
+        
+        let nsMenuItem = NSMenuItem(title: displayedTitle, action: #selector(FinderSync.menuItemClicked(_:)), keyEquivalent: "")
         // 设置图标
         let iconName = menuItem.icon ?? "questionmark"
-        if let image = NSImage(systemSymbolName: iconName, accessibilityDescription: menuItem.name) {
+        if let image = NSImage(systemSymbolName: iconName, accessibilityDescription: displayedTitle) {
             nsMenuItem.image = image
         }
         
-        // 记录菜单标题到动作的映射
+        // 记录菜单标题到动作的映射（使用显示标题，确保点击时能正确解析）
         if let action = menuItem.action {
             let actionString = "\(action.type.rawValue)|\(action.parameter ?? "")"
-            titleToActionMap[menuItem.name] = actionString
+            titleToActionMap[displayedTitle] = actionString
         }
         
         // 处理子菜单
         if let children = menuItem.children, !children.isEmpty {
-            let submenu = NSMenu(title: menuItem.name)
+            let submenu = NSMenu(title: displayedTitle)
             for childItem in children {
                 let childNSMenuItem = buildMenuItem(from: childItem)
                 submenu.addItem(childNSMenuItem)
