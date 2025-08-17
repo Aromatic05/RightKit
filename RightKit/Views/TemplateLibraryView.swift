@@ -341,12 +341,22 @@ struct TemplateLibraryView: View {
     
     // MARK: - 私有方法
     private func updateTemplateFolderStatus() {
+        // 使用轻量级检查，不阻塞UI
+        let hasStoredPath = TemplateManager.isTemplateFolderConfigured()
         templateFolderPath = TemplateManager.getCurrentTemplateFolderPath()
-        isTemplatefolderConfigured = templateFolderPath != nil
+        isTemplatefolderConfigured = hasStoredPath
         
-        // 如果配置了目录，刷新模板列表
-        if isTemplatefolderConfigured {
-            viewModel.loadTemplates()
+        // 如果有存储的路径，在后台验证访问权限
+        if hasStoredPath {
+            TemplateManager.validateTemplateFolderAccess { isValid in
+                if isValid {
+                    // 只有在验证成功时才刷新模板列表
+                    viewModel.loadTemplates()
+                } else {
+                    // 如果无法访问，更新状态
+                    self.isTemplatefolderConfigured = false
+                }
+            }
         }
     }
 }

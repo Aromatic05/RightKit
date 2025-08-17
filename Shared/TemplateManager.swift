@@ -436,19 +436,23 @@ class TemplateManager {
     static func initializeTemplateFolder() {
         NSLog("Initializing template folder...")
         
-        // 检查当前是否有有效的模板文件夹配置
-        if let currentURL = getTemplateFolderURL() {
-            NSLog("Template folder already configured with valid path: \(currentURL.path)")
-            return
-        }
-        
-        NSLog("No valid template folder configured, prompting user to select...")
-        
-        // 弹出选择对话框让用户选择并授权访问路径
-        DispatchQueue.main.async {
-            selectTemplateFolder { success in
-                if !success {
-                    NSLog("User did not select template folder, will prompt again next time")
+        // 在后台线程检查配置状态，避免阻塞UI
+        DispatchQueue.global(qos: .userInitiated).async {
+            let isConfigured = getTemplateFolderURL() != nil
+            
+            if isConfigured {
+                NSLog("Template folder already configured")
+                return
+            }
+            
+            NSLog("No valid template folder configured, prompting user to select...")
+            
+            // 切换到主线程显示弹窗
+            DispatchQueue.main.async {
+                selectTemplateFolder { success in
+                    if !success {
+                        NSLog("User did not select template folder, will prompt again next time")
+                    }
                 }
             }
         }
@@ -458,26 +462,36 @@ class TemplateManager {
     static func selectTemplateFolderForUI(completion: @escaping (Bool) -> Void = { _ in }) {
         NSLog("UI requested template folder selection...")
         
-        DispatchQueue.main.async {
-            selectTemplateFolder { success in
-                if success {
-                    NSLog("User selected new template folder from UI")
-                    // 发送通知让UI更新
-                    NotificationCenter.default.post(
-                        name: NSNotification.Name("TemplateFolderChanged"),
-                        object: nil
-                    )
-                } else {
-                    NSLog("User cancelled template folder selection from UI")
-                }
-                completion(success)
+        // 直接显示弹窗，不需要额外的异步调用
+        selectTemplateFolder { success in
+            if success {
+                NSLog("User selected new template folder from UI")
+                // 发送通知让UI更新
+                NotificationCenter.default.post(
+                    name: NSNotification.Name("TemplateFolderChanged"),
+                    object: nil
+                )
+            } else {
+                NSLog("User cancelled template folder selection from UI")
             }
+            completion(success)
         }
     }
     
-    /// 检查模板文件夹是否已配置
+    /// 检查模板文件夹是否已配置（轻量级检查，不进行文件系统访问）
     static func isTemplateFolderConfigured() -> Bool {
-        return getTemplateFolderURL() != nil
+        // 只检查是否有存储的路径，不验证文件系统
+        return getStoredTemplateFolderPath() != nil
+    }
+    
+    /// 异步检查模板文件夹是否可访问（用于后台验证）
+    static func validateTemplateFolderAccess(completion: @escaping (Bool) -> Void) {
+        DispatchQueue.global(qos: .utility).async {
+            let isValid = getTemplateFolderURL() != nil
+            DispatchQueue.main.async {
+                completion(isValid)
+            }
+        }
     }
     
     /// 强制重新初始化到用户选择的目录（弹窗选择）
@@ -501,6 +515,9 @@ class TemplateManager {
     
     /// 选择新的模板文件夹
     static func selectTemplateFolder(completion: @escaping (Bool) -> Void) {
+        NSLog("Creating NSOpenPanel on main thread...")
+        
+        // NSOpenPanel必须在主线程创建
         let openPanel = NSOpenPanel()
         openPanel.title = "选择模板文件夹"
         openPanel.message = "请选择用于存储模板文件的文件夹"
@@ -509,22 +526,30 @@ class TemplateManager {
         openPanel.canCreateDirectories = true
         openPanel.allowsMultipleSelection = false
         
-        // 设置默认路径为用户Documents目录
-        let documentsPath = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Documents")
-        openPanel.directoryURL = documentsPath
-        
-        openPanel.begin { response in
-            if response == .OK, let selectedURL = openPanel.url {
-                NSLog("User selected template folder: \(selectedURL.path)")
-                let success = setTemplateFolder(selectedURL)
-                DispatchQueue.main.async {
-                    completion(success)
-                }
-            } else {
-                NSLog("User cancelled template folder selection")
-                DispatchQueue.main.async {
-                    completion(false)
+        // 在后台线程获取默认路径，然后回到主线程设置
+        DispatchQueue.global(qos: .userInitiated).async {
+            let documentsPath = FileManager.default.homeDirectoryForCurrentUser
+                .appendingPathComponent("Documents")
+            
+            // 回到主线程设置directoryURL和显示弹窗
+            DispatchQueue.main.async {
+                openPanel.directoryURL = documentsPath
+                
+                openPanel.begin { response in
+                    if response == .OK, let selectedURL = openPanel.url {
+                        NSLog("User selected template folder: \(selectedURL.path)")
+                        
+                        // 在后台线程保存设置，避免阻塞UI
+                        DispatchQueue.global(qos: .userInitiated).async {
+                            let success = setTemplateFolder(selectedURL)
+                            DispatchQueue.main.async {
+                                completion(success)
+                            }
+                        }
+                    } else {
+                        NSLog("User cancelled template folder selection")
+                        completion(false)
+                    }
                 }
             }
         }
