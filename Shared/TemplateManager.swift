@@ -251,52 +251,21 @@ class TemplateManager {
         }
     }
     
-    /// 为Extension提供的初始化方法：根据存储的路径请求授权
-    static func initializeForExtension() -> Bool {
-        NSLog("Initializing template folder for Extension...")
-        
-        // 检查是否已有有效的bookmark
-        if getTemplateFolderURLFromBookmark() != nil {
-            NSLog("Extension already has valid bookmark")
-            return true
-        }
-        
-        // 获取存储的路径
-        guard let storedPath = getStoredTemplateFolderPath() else {
-            NSLog("No stored template folder path found for Extension")
-            return false
-        }
-        
-        NSLog("Extension attempting to authorize path: \(storedPath)")
-        
-        let url = URL(fileURLWithPath: storedPath)
-        
-        // 检查路径是否存在
-        guard FileManager.default.fileExists(atPath: url.path) else {
-            NSLog("Stored template folder path no longer exists: \(storedPath)")
-            return false
-        }
-        
-        // Extension需要通过用户交互来获得授权
-        // 这里我们只能尝试直接访问，如果失败则需要用户重新配置
-        return setTemplateFolder(url)
-    }
-    
-    /// 获取模板文件夹中的所有模板文件
-    static func getTemplateFiles() -> [String] {
+    /// 执行需要模板文件夹访问的操作（统一处理security-scoped资源）
+    private static func executeWithTemplateAccess<T>(operation: (URL) throws -> T) -> T? {
         guard let templateURL = getTemplateFolderURL() else {
             NSLog("Template folder not configured")
-            return []
+            return nil
         }
         
-        // 检查是否是Extension进程
+        // Extension不需要security-scoped调用，主应用需要
         let isExtension = Bundle.main.bundleIdentifier?.contains("Extension") == true
         let needsSecurityScope = !isExtension && !templateURL.path.hasPrefix(FileManager.default.homeDirectoryForCurrentUser.path)
         
         if needsSecurityScope {
             guard templateURL.startAccessingSecurityScopedResource() else {
                 NSLog("Failed to access template folder")
-                return []
+                return nil
             }
         }
         
@@ -307,6 +276,16 @@ class TemplateManager {
         }
         
         do {
+            return try operation(templateURL)
+        } catch {
+            NSLog("Template operation failed: \(error)")
+            return nil
+        }
+    }
+    
+    /// 获取模板文件夹中的所有模板文件
+    static func getTemplateFiles() -> [String] {
+        return executeWithTemplateAccess { templateURL in
             let fileURLs = try FileManager.default.contentsOfDirectory(
                 at: templateURL,
                 includingPropertiesForKeys: [.isRegularFileKey],
@@ -319,66 +298,37 @@ class TemplateManager {
                     return url.lastPathComponent
                 }
                 return nil
-            }.sorted() // 添加排序以保持一致性
+            }.sorted()
             
             NSLog("Found \(templateFiles.count) template files: \(templateFiles)")
             return templateFiles
-        } catch {
-            NSLog("Error reading template folder: \(error)")
-            return []
-        }
+        } ?? []
     }
     
-    /// 从模板创建文件 - Extension优化版本
+    /// 从模板创建文件
     static func createFileFromTemplate(templateName: String, targetDirectory: URL, newFileName: String? = nil) -> Bool {
-        guard let templateURL = getTemplateFolderURL() else {
-            NSLog("Template folder not configured")
-            return false
-        }
-        
-        // 检查是否是Extension进程
-        let isExtension = Bundle.main.bundleIdentifier?.contains("Extension") == true
-        let needsSecurityScope = !isExtension && !templateURL.path.hasPrefix(FileManager.default.homeDirectoryForCurrentUser.path)
-        
-        if needsSecurityScope {
-            guard templateURL.startAccessingSecurityScopedResource() else {
-                NSLog("Failed to access template folder")
+        return executeWithTemplateAccess { templateURL in
+            let sourceURL = templateURL.appendingPathComponent(templateName)
+            
+            // 检查源文件是否存在
+            guard FileManager.default.fileExists(atPath: sourceURL.path) else {
+                NSLog("Template file does not exist: \(templateName)")
                 return false
             }
-        }
-        
-        defer {
-            if needsSecurityScope {
-                templateURL.stopAccessingSecurityScopedResource()
-            }
-        }
-        
-        let sourceURL = templateURL.appendingPathComponent(templateName)
-        
-        // 检查源文件是否存在
-        guard FileManager.default.fileExists(atPath: sourceURL.path) else {
-            NSLog("Template file does not exist: \(templateName)")
-            return false
-        }
-        
-        // 确定目标文件名
-        let finalFileName = newFileName ?? templateName
-        let targetURL = targetDirectory.appendingPathComponent(finalFileName)
-        
-        // 生成唯一文件名（如果文件已存在）
-        let uniqueTargetURL = generateUniqueFileURL(baseURL: targetURL)
-        
-        do {
+            
+            // 确定目标文件名
+            let finalFileName = newFileName ?? templateName
+            let targetURL = targetDirectory.appendingPathComponent(finalFileName)
+            
+            // 生成唯一文件名（如果文件已存在）
+            let uniqueTargetURL = generateUniqueFileURL(baseURL: targetURL)
+            
             try FileManager.default.copyItem(at: sourceURL, to: uniqueTargetURL)
             NSLog("File created from template: \(uniqueTargetURL.path)")
             return true
-        } catch {
-            NSLog("Error creating file from template: \(error)")
-            return false
-        }
+        } ?? false
     }
     
-    /// 上传模板文件到模板文件夹
     /// 上传模板文件到模板文件夹
     static func uploadTemplate(from sourceURL: URL) -> Bool {
         guard let templateURL = getTemplateFolderURL() else {
@@ -436,44 +386,19 @@ class TemplateManager {
     
     /// 删除模板文件 - Extension优化版本
     static func deleteTemplate(_ templateName: String) -> Bool {
-        guard let templateURL = getTemplateFolderURL() else {
-            NSLog("Template folder not configured")
-            return false
-        }
-        
-        // 检查是否是Extension进程
-        let isExtension = Bundle.main.bundleIdentifier?.contains("Extension") == true
-        let needsSecurityScope = !isExtension && !templateURL.path.hasPrefix(FileManager.default.homeDirectoryForCurrentUser.path)
-        
-        if needsSecurityScope {
-            guard templateURL.startAccessingSecurityScopedResource() else {
-                NSLog("Failed to access template folder")
+        return executeWithTemplateAccess { templateURL in
+            let targetURL = templateURL.appendingPathComponent(templateName)
+            
+            // 检查文件是否存在
+            guard FileManager.default.fileExists(atPath: targetURL.path) else {
+                NSLog("Template file does not exist: \(templateName)")
                 return false
             }
-        }
-        
-        defer {
-            if needsSecurityScope {
-                templateURL.stopAccessingSecurityScopedResource()
-            }
-        }
-        
-        let targetURL = templateURL.appendingPathComponent(templateName)
-        
-        // 检查文件是否存在
-        guard FileManager.default.fileExists(atPath: targetURL.path) else {
-            NSLog("Template file does not exist: \(templateName)")
-            return false
-        }
-        
-        do {
+            
             try FileManager.default.removeItem(at: targetURL)
             NSLog("Template deleted successfully: \(templateName)")
             return true
-        } catch {
-            NSLog("Error deleting template: \(error)")
-            return false
-        }
+        } ?? false
     }
     
     /// 生成唯一的文件URL（如果文件已存在，添加数字后缀）
