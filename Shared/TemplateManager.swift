@@ -98,12 +98,7 @@ class TemplateManager {
             
             if isStale {
                 NSLog("Bookmark is stale for: \(url.path)")
-                if FileManager.default.fileExists(atPath: url.path) {
-                    // 尝试重新创建 bookmark
-                    if setTemplateFolder(url) {
-                        return url
-                    }
-                }
+                // 不要在这里立即尝试重新创建，而是返回nil让上层处理
                 return nil
             }
             
@@ -210,40 +205,46 @@ class TemplateManager {
     }
     
     /// 上传模板文件到模板文件夹
+    /// 上传模板文件到模板文件夹
     static func uploadTemplate(from sourceURL: URL) -> Bool {
         guard let templateURL = getTemplateFolderURL() else {
             NSLog("Template folder not configured")
             return false
         }
-        
+
         // 检查源文件是否存在
         guard FileManager.default.fileExists(atPath: sourceURL.path) else {
             NSLog("Source file does not exist: \(sourceURL.path)")
             return false
         }
-        
-        let needsSecurityScope = !templateURL.path.hasPrefix(FileManager.default.homeDirectoryForCurrentUser.path)
-        
-        if needsSecurityScope {
-            guard templateURL.startAccessingSecurityScopedResource() else {
-                NSLog("Failed to access template folder")
-                return false
+
+        let sourceAccessing = sourceURL.startAccessingSecurityScopedResource()
+        if !sourceAccessing {
+            NSLog("Could not start accessing security scoped resource for source URL, but continuing: \(sourceURL.path)")
+        }
+        defer {
+            if sourceAccessing {
+                sourceURL.stopAccessingSecurityScopedResource()
             }
         }
-        
+
+        // 检查目标文件夹的访问权限
+        let destinationAccessing = templateURL.startAccessingSecurityScopedResource()
+        if !destinationAccessing {
+            NSLog("Could not start accessing security scoped resource for destination URL, but continuing: \(templateURL.path)")
+        }
         defer {
-            if needsSecurityScope {
+            if destinationAccessing {
                 templateURL.stopAccessingSecurityScopedResource()
             }
         }
         
-        // 获取文件扩展名
         let fileExtension = sourceURL.pathExtension
         let targetFileName = fileExtension.isEmpty ? "template" : "template.\(fileExtension)"
         let targetURL = templateURL.appendingPathComponent(targetFileName)
-        
-        // 生成唯一文件名（如果文件已存在）
         let uniqueTargetURL = generateUniqueTemplateURL(baseURL: targetURL)
+        
+        NSLog("Attempting to upload template from \(sourceURL.path) to \(uniqueTargetURL.path)")
         
         do {
             try FileManager.default.copyItem(at: sourceURL, to: uniqueTargetURL)
@@ -251,6 +252,10 @@ class TemplateManager {
             return true
         } catch {
             NSLog("Error uploading template: \(error)")
+            // 打印更详细的错误信息
+            if let underlyingError = (error as NSError).userInfo[NSUnderlyingErrorKey] as? NSError {
+                NSLog("Underlying error: \(underlyingError)")
+            }
             return false
         }
     }
