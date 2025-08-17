@@ -82,9 +82,9 @@ class ActionHandler {
         NSLog("RightKit: Creating file from template '%@' in directory: %@", uniqueFileURL.lastPathComponent, targetDirectory.path)
         let templateFileName = "template.\(fileExtension)"
         var templateCopied = false
-        if let templateFolderURL = TemplateManager.getTemplateFolderURL(),
-           templateFolderURL.startAccessingSecurityScopedResource() {
-            defer { templateFolderURL.stopAccessingSecurityScopedResource() }
+        
+        if let templateFolderURL = TemplateManager.getTemplateFolderURL() {
+            // Extension不需要startAccessingSecurityScopedResource调用
             let templateFileURL = templateFolderURL.appendingPathComponent(templateFileName)
             if FileManager.default.fileExists(atPath: templateFileURL.path) {
                 do {
@@ -100,6 +100,7 @@ class ActionHandler {
         } else {
             NSLog("RightKit: Template folder not configured or cannot access")
         }
+        
         if templateCopied {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 self.activateFileRename(for: uniqueFileURL)

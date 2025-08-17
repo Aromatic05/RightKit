@@ -14,22 +14,36 @@ class TemplateManager {
     /// App Group ID - 与ConfigurationManager保持一致
     private static let appGroupID = "group.Aromatic.RightKit"
     
-    /// 存储模板文件夹书签的文件名
+    /// 存储模板文件夹书签的文件名（每个进程独立）
     private static let templateFolderBookmarkFileName = "templateFolderBookmark"
+    
+    /// 存储模板文件夹路径的文件名（跨进程共享）
+    private static let templateFolderPathFileName = "templateFolderPath.txt"
     
     /// 获取App Group容器URL
     private static var containerURL: URL? {
         return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID)
     }
     
-    /// 获取bookmark存储文件的完整路径
+    /// 获取bookmark存储文件的完整路径（每个进程独立）
     private static var bookmarkFileURL: URL? {
+        guard let containerURL = containerURL else { return nil }
+        let processName = Bundle.main.bundleIdentifier?.contains("Extension") == true ? "Extension" : "MainApp"
+        return containerURL
+            .appendingPathComponent("Library")
+            .appendingPathComponent("Application Support")
+            .appendingPathComponent("RightKit")
+            .appendingPathComponent("\(processName)_\(templateFolderBookmarkFileName)")
+    }
+    
+    /// 获取路径存储文件的完整路径（跨进程共享）
+    private static var pathFileURL: URL? {
         guard let containerURL = containerURL else { return nil }
         return containerURL
             .appendingPathComponent("Library")
             .appendingPathComponent("Application Support")
             .appendingPathComponent("RightKit")
-            .appendingPathComponent(templateFolderBookmarkFileName)
+            .appendingPathComponent(templateFolderPathFileName)
     }
     
     /// 设置模板文件夹并创建Security-Scoped Bookmark
@@ -42,8 +56,9 @@ class TemplateManager {
             return false
         }
         
-        // 获取bookmark文件URL
-        guard let bookmarkURL = bookmarkFileURL else {
+        // 获取文件URL
+        guard let bookmarkURL = bookmarkFileURL,
+              let pathURL = pathFileURL else {
             NSLog("Could not get App Group container URL")
             return false
         }
@@ -57,7 +72,16 @@ class TemplateManager {
             return false
         }
         
-        // 使用 security-scoped bookmark
+        // 1. 先保存纯文本路径（跨进程共享）
+        do {
+            try url.path.write(to: pathURL, atomically: true, encoding: .utf8)
+            NSLog("Template folder path saved to app group: \(url.path)")
+        } catch {
+            NSLog("Error saving template folder path: \(error)")
+            return false
+        }
+        
+        // 2. 然后为当前进程创建bookmark
         guard url.startAccessingSecurityScopedResource() else {
             NSLog("Failed to access security scoped resource")
             return false
@@ -74,10 +98,10 @@ class TemplateManager {
                 relativeTo: nil
             )
             
-            // 将bookmark数据写入app group文件
+            // 将bookmark数据写入当前进程的文件
             try bookmarkData.write(to: bookmarkURL)
             
-            NSLog("Template folder bookmark saved to app group: \(url.path)")
+            NSLog("Template folder bookmark saved for current process: \(url.path)")
             return true
         } catch {
             NSLog("Error creating or saving bookmark: \(error)")
@@ -85,8 +109,110 @@ class TemplateManager {
         }
     }
     
+    /// 获取存储的模板文件夹路径（纯文本）
+    static func getStoredTemplateFolderPath() -> String? {
+        guard let pathURL = pathFileURL else {
+            NSLog("Could not get App Group container URL")
+            return nil
+        }
+        
+        guard FileManager.default.fileExists(atPath: pathURL.path) else {
+            NSLog("No template folder path found")
+            return nil
+        }
+        
+        do {
+            let path = try String(contentsOf: pathURL, encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)
+            NSLog("Retrieved stored template folder path: \(path)")
+            return path
+        } catch {
+            NSLog("Error reading template folder path: \(error)")
+            return nil
+        }
+    }
+    
     /// 获取模板文件夹URL
     static func getTemplateFolderURL() -> URL? {
+        // 1. 首先尝试从当前进程的bookmark获取
+        if let url = getTemplateFolderURLFromBookmark() {
+            return url
+        }
+        
+        // 2. Extension特殊处理：直接尝试访问存储的路径
+        guard let storedPath = getStoredTemplateFolderPath() else {
+            NSLog("No stored template folder path found")
+            return nil
+        }
+        
+        let url = URL(fileURLWithPath: storedPath)
+        
+        // 检查路径是否仍然存在
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            NSLog("Stored template folder path no longer exists: \(storedPath)")
+            return nil
+        }
+        
+        // 检查是否是Extension进程
+        let isExtension = Bundle.main.bundleIdentifier?.contains("Extension") == true
+        
+        if isExtension {
+            // Extension直接尝试访问路径，不需要重新授权
+            NSLog("Extension directly accessing template folder: \(storedPath)")
+            
+            // 测试是否能够直接访问该路径
+            do {
+                let _ = try FileManager.default.contentsOfDirectory(atPath: url.path)
+                NSLog("Extension successfully accessed template folder: \(storedPath)")
+                return url
+            } catch {
+                NSLog("Extension failed to access template folder: \(error)")
+                return nil
+            }
+        } else {
+            // 主应用尝试重新授权并创建bookmark
+            NSLog("MainApp attempting to re-authorize path: \(storedPath)")
+            
+            if setTemplateFolder(url) {
+                NSLog("Successfully re-authorized template folder: \(storedPath)")
+                return url
+            } else {
+                NSLog("Failed to re-authorize template folder: \(storedPath)")
+                return nil
+            }
+        }
+    }
+    
+    /// Extension专用：检查是否能直接访问模板文件夹
+    static func canExtensionAccessTemplateFolder() -> Bool {
+        guard Bundle.main.bundleIdentifier?.contains("Extension") == true else {
+            return false
+        }
+        
+        guard let storedPath = getStoredTemplateFolderPath() else {
+            NSLog("Extension: No stored template folder path found")
+            return false
+        }
+        
+        let url = URL(fileURLWithPath: storedPath)
+        
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            NSLog("Extension: Stored template folder path no longer exists: \(storedPath)")
+            return false
+        }
+        
+        // 测试读取权限
+        do {
+            let _ = try FileManager.default.contentsOfDirectory(atPath: url.path)
+            NSLog("Extension: Can directly access template folder: \(storedPath)")
+            return true
+        } catch {
+            NSLog("Extension: Cannot access template folder: \(error)")
+            return false
+        }
+    }
+    
+    /// 从bookmark获取模板文件夹URL（私有方法）
+    private static func getTemplateFolderURLFromBookmark() -> URL? {
         guard let bookmarkURL = bookmarkFileURL else {
             NSLog("Could not get App Group container URL")
             return nil
@@ -94,7 +220,7 @@ class TemplateManager {
         
         // 检查bookmark文件是否存在
         guard FileManager.default.fileExists(atPath: bookmarkURL.path) else {
-            NSLog("No template folder bookmark found")
+            NSLog("No template folder bookmark found for current process")
             return nil
         }
         
@@ -110,6 +236,8 @@ class TemplateManager {
             
             if isStale {
                 NSLog("Bookmark is stale for: \(url.path)")
+                // 删除过期的bookmark文件
+                try? FileManager.default.removeItem(at: bookmarkURL)
                 return nil
             }
             
@@ -118,10 +246,40 @@ class TemplateManager {
         } catch {
             NSLog("Error resolving bookmark: \(error)")
             // 删除无效的bookmark文件
-            
-//            try? FileManager.default.removeItem(at: bookmarkURL)
+            try? FileManager.default.removeItem(at: bookmarkURL)
             return nil
         }
+    }
+    
+    /// 为Extension提供的初始化方法：根据存储的路径请求授权
+    static func initializeForExtension() -> Bool {
+        NSLog("Initializing template folder for Extension...")
+        
+        // 检查是否已有有效的bookmark
+        if getTemplateFolderURLFromBookmark() != nil {
+            NSLog("Extension already has valid bookmark")
+            return true
+        }
+        
+        // 获取存储的路径
+        guard let storedPath = getStoredTemplateFolderPath() else {
+            NSLog("No stored template folder path found for Extension")
+            return false
+        }
+        
+        NSLog("Extension attempting to authorize path: \(storedPath)")
+        
+        let url = URL(fileURLWithPath: storedPath)
+        
+        // 检查路径是否存在
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            NSLog("Stored template folder path no longer exists: \(storedPath)")
+            return false
+        }
+        
+        // Extension需要通过用户交互来获得授权
+        // 这里我们只能尝试直接访问，如果失败则需要用户重新配置
+        return setTemplateFolder(url)
     }
     
     /// 获取模板文件夹中的所有模板文件
@@ -131,7 +289,9 @@ class TemplateManager {
             return []
         }
         
-        let needsSecurityScope = !templateURL.path.hasPrefix(FileManager.default.homeDirectoryForCurrentUser.path)
+        // 检查是否是Extension进程
+        let isExtension = Bundle.main.bundleIdentifier?.contains("Extension") == true
+        let needsSecurityScope = !isExtension && !templateURL.path.hasPrefix(FileManager.default.homeDirectoryForCurrentUser.path)
         
         if needsSecurityScope {
             guard templateURL.startAccessingSecurityScopedResource() else {
@@ -169,14 +329,16 @@ class TemplateManager {
         }
     }
     
-    /// 从模板创建文件
+    /// 从模板创建文件 - Extension优化版本
     static func createFileFromTemplate(templateName: String, targetDirectory: URL, newFileName: String? = nil) -> Bool {
         guard let templateURL = getTemplateFolderURL() else {
             NSLog("Template folder not configured")
             return false
         }
         
-        let needsSecurityScope = !templateURL.path.hasPrefix(FileManager.default.homeDirectoryForCurrentUser.path)
+        // 检查是否是Extension进程
+        let isExtension = Bundle.main.bundleIdentifier?.contains("Extension") == true
+        let needsSecurityScope = !isExtension && !templateURL.path.hasPrefix(FileManager.default.homeDirectoryForCurrentUser.path)
         
         if needsSecurityScope {
             guard templateURL.startAccessingSecurityScopedResource() else {
@@ -272,14 +434,16 @@ class TemplateManager {
         }
     }
     
-    /// 删除模板文件
+    /// 删除模板文件 - Extension优化版本
     static func deleteTemplate(_ templateName: String) -> Bool {
         guard let templateURL = getTemplateFolderURL() else {
             NSLog("Template folder not configured")
             return false
         }
         
-        let needsSecurityScope = !templateURL.path.hasPrefix(FileManager.default.homeDirectoryForCurrentUser.path)
+        // 检查是否是Extension进程
+        let isExtension = Bundle.main.bundleIdentifier?.contains("Extension") == true
+        let needsSecurityScope = !isExtension && !templateURL.path.hasPrefix(FileManager.default.homeDirectoryForCurrentUser.path)
         
         if needsSecurityScope {
             guard templateURL.startAccessingSecurityScopedResource() else {
@@ -427,18 +591,27 @@ class TemplateManager {
     
     /// 重置模板文件夹配置
     static func resetTemplateFolder() {
-        guard let bookmarkURL = bookmarkFileURL else {
-            NSLog("Could not get App Group container URL")
-            return
-        }
-        
-        // 删除bookmark文件
-        if FileManager.default.fileExists(atPath: bookmarkURL.path) {
+        // 删除当前进程的bookmark文件
+        if let bookmarkURL = bookmarkFileURL,
+           FileManager.default.fileExists(atPath: bookmarkURL.path) {
             do {
                 try FileManager.default.removeItem(at: bookmarkURL)
-                NSLog("Template folder bookmark file deleted")
+                NSLog("Template folder bookmark file deleted for current process")
             } catch {
                 NSLog("Error deleting bookmark file: \(error)")
+            }
+        }
+        
+        // 删除共享的路径文件（只有主应用才应该删除这个）
+        let isMainApp = Bundle.main.bundleIdentifier?.contains("Extension") != true
+        if isMainApp,
+           let pathURL = pathFileURL,
+           FileManager.default.fileExists(atPath: pathURL.path) {
+            do {
+                try FileManager.default.removeItem(at: pathURL)
+                NSLog("Template folder path file deleted")
+            } catch {
+                NSLog("Error deleting path file: \(error)")
             }
         }
         
@@ -447,7 +620,11 @@ class TemplateManager {
     
     /// 获取当前模板文件夹路径（用于显示）
     static func getCurrentTemplateFolderPath() -> String? {
-        return getTemplateFolderURL()?.path
+        // 优先从bookmark获取，fallback到存储的路径
+        if let url = getTemplateFolderURLFromBookmark() {
+            return url.path
+        }
+        return getStoredTemplateFolderPath()
     }
     
     /// 强制重新初始化到用户Documents目录
