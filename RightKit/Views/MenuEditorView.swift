@@ -9,7 +9,6 @@ import SwiftUI
 
 struct MenuEditorView: View {
     @EnvironmentObject var viewModel: AppViewModel
-    @State private var selectedItemId: UUID?
     @State private var expandedItems: Set<UUID> = []
     
     // 递归查找选中项
@@ -108,7 +107,7 @@ struct MenuEditorView: View {
                             MenuItemTreeView(
                                 item: item,
                                 level: 0,
-                                selectedItemId: $selectedItemId,
+                                selectedItemId: $viewModel.selectedItemId,
                                 expandedItems: $expandedItems
                             )
                             .environmentObject(viewModel)
@@ -119,9 +118,10 @@ struct MenuEditorView: View {
             }
             
             // 底部详情编辑区域
-            if let selectedItem = findMenuItem(by: selectedItemId, in: viewModel.menuItems) {
+            if let selectedId = viewModel.selectedItemId {
                 Divider()
-                MenuItemDetailEditor(item: selectedItem)
+                MenuItemDetailEditor(itemId: selectedId)
+                    .id(selectedId)
                     .environmentObject(viewModel)
                     .padding(16)
                     .background(.regularMaterial)

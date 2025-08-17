@@ -14,6 +14,7 @@ class AppViewModel: ObservableObject {
     @Published var templates: [TemplateInfo] = []
     @Published var hasChanges = false
     @Published var selectedActionType: ActionType? = nil
+    @Published var selectedItemId: UUID?
     
     private let configurationManager = ConfigurationManager.shared
     
