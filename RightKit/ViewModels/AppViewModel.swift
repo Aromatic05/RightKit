@@ -53,50 +53,26 @@ class AppViewModel: ObservableObject {
     // MARK: - Template Management
     
     func loadTemplates() {
-        // 暂时使用空数组，模板功能将在后续版本中完善
-        templates = []
-        NSLog("Templates loaded")
+        // 使用TemplateManager获取模板文件列表
+        let templateFileNames = TemplateManager.getTemplateFiles()
+        templates = templateFileNames.map { fileName in
+            TemplateInfo(
+                fileName: fileName,
+                displayName: URL(fileURLWithPath: fileName).deletingPathExtension().lastPathComponent,
+                iconName: iconForFileExtension(URL(fileURLWithPath: fileName).pathExtension)
+            )
+        }
+        NSLog("Loaded \(templates.count) templates")
     }
     
     func addTemplate(from url: URL) {
-        guard url.startAccessingSecurityScopedResource() else {
-            NSLog("Failed to access security scoped resource: \(url)")
-            return
-        }
-        defer { url.stopAccessingSecurityScopedResource() }
-        
-        guard let templatesURL = ConfigurationManager.templatesDirectoryURL else {
-            NSLog("Could not get templates directory URL")
-            return
-        }
-        
-        let fileName = url.lastPathComponent
-        let destinationURL = templatesURL.appendingPathComponent(fileName)
-        
-        do {
-            // 确保模板目录存在
-            try FileManager.default.createDirectory(at: templatesURL, withIntermediateDirectories: true, attributes: nil)
-            
-            // 复制文件到模板目录
-            if FileManager.default.fileExists(atPath: destinationURL.path) {
-                try FileManager.default.removeItem(at: destinationURL)
-            }
-            try FileManager.default.copyItem(at: url, to: destinationURL)
-            
-            // 创建模板信息并添加到列表
-            let template = TemplateInfo(
-                fileName: fileName,
-                displayName: url.deletingPathExtension().lastPathComponent,
-                iconName: iconForFileExtension(url.pathExtension)
-            )
-            
-            if !templates.contains(where: { $0.fileName == fileName }) {
-                templates.append(template)
-            }
-            
-            NSLog("Added template: \(fileName)")
-        } catch {
-            NSLog("Failed to add template: \(error)")
+        // 使用TemplateManager的uploadTemplate方法上传模板
+        if TemplateManager.uploadTemplate(from: url) {
+            // 上传成功后重新加载模板列表
+            loadTemplates()
+            NSLog("Template uploaded successfully from: \(url.lastPathComponent)")
+        } else {
+            NSLog("Failed to upload template from: \(url.lastPathComponent)")
         }
     }
     
@@ -105,19 +81,24 @@ class AppViewModel: ObservableObject {
         
         let template = templates[index]
         
-        guard let templatesURL = ConfigurationManager.templatesDirectoryURL else {
-            NSLog("Could not get templates directory URL")
-            return
+        // 使用TemplateManager的deleteTemplate方法删除模板
+        if TemplateManager.deleteTemplate(template.fileName) {
+            // 删除成功后重新加载模板列表
+            loadTemplates()
+            NSLog("Template removed successfully: \(template.fileName)")
+        } else {
+            NSLog("Failed to remove template: \(template.fileName)")
         }
-        
-        let templateURL = templatesURL.appendingPathComponent(template.fileName)
-        
-        do {
-            try FileManager.default.removeItem(at: templateURL)
-            templates.remove(at: index)
-            NSLog("Removed template: \(template.fileName)")
-        } catch {
-            NSLog("Failed to remove template: \(error)")
+    }
+    
+    func removeTemplate(_ templateName: String) {
+        // 使用TemplateManager的deleteTemplate方法删除模板
+        if TemplateManager.deleteTemplate(templateName) {
+            // 删除成功后重新加载模板列表
+            loadTemplates()
+            NSLog("Template removed successfully: \(templateName)")
+        } else {
+            NSLog("Failed to remove template: \(templateName)")
         }
     }
     

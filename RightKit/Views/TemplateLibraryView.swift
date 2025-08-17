@@ -9,6 +9,8 @@ struct TemplateLibraryView: View {
     @State private var showActionLibrary = true
     @State private var showTemplateLibrary = true
     @State private var selectedTemplate: TemplateInfo? = nil
+    @State private var showingDeleteAlert = false
+    @State private var templateToDelete: TemplateInfo? = nil
     
     // (修复第一步): 创建一个本地的 @State 变量来管理 List 的选择
     @State private var localSelectedActionType: ActionType?
@@ -16,7 +18,7 @@ struct TemplateLibraryView: View {
     // 新增本地选中索引
     @State private var selectedActionIndex: Int? = nil
 
-    // 获取所有操作类型（最后一个 nil 表示“子菜单”）
+    // 获取所有操作类型（最后一个 nil 表示"子菜单"）
     private var allActions: [ActionType?] {
         return [
             .createEmptyFile,
@@ -27,7 +29,7 @@ struct TemplateLibraryView: View {
             .cutFile,
             .runShellScript,
             .separator,
-            nil // nil 表示“子菜单”
+            nil // nil 表示"子菜单"
         ]
     }
     
@@ -46,12 +48,13 @@ struct TemplateLibraryView: View {
             .background(.regularMaterial)
             Divider()
                 .padding(.top, 0)
+            
             // 操作库折叠菜单
             DisclosureGroup(
                 isExpanded: $showActionLibrary,
                 content: {
                     // (修复第二步): 将 List 的 selection 绑定到本地的 @State 变量
-                    List(allActions.indices, id: \ .self, selection: $selectedActionIndex) { idx in
+                    List(allActions.indices, id: \.self, selection: $selectedActionIndex) { idx in
                         let actionType = allActions[idx]
                         HStack {
                             if let type = actionType {
@@ -92,6 +95,7 @@ struct TemplateLibraryView: View {
             .padding(.horizontal, 0)
             .padding(.vertical, 4)
             .padding(.leading, 12)
+            
             // 模板库折叠菜单
             DisclosureGroup(
                 isExpanded: $showTemplateLibrary,
@@ -125,6 +129,18 @@ struct TemplateLibraryView: View {
                                         .foregroundColor(.secondary)
                                 }
                                 Spacer()
+                                
+                                // 删除按钮
+                                Button(action: {
+                                    templateToDelete = template
+                                    showingDeleteAlert = true
+                                }) {
+                                    Image(systemName: "trash")
+                                        .foregroundColor(.red)
+                                        .font(.system(size: 14))
+                                }
+                                .buttonStyle(.borderless)
+                                .help("删除模板")
                             }
                             .contentShape(Rectangle())
                         }
@@ -145,6 +161,16 @@ struct TemplateLibraryView: View {
                         }
                         .buttonStyle(.borderless)
                         .help("添加新模板")
+                        
+                        // 刷新按钮
+                        Button(action: {
+                            viewModel.loadTemplates()
+                        }) {
+                            Image(systemName: "arrow.clockwise")
+                                .foregroundColor(.accentColor)
+                        }
+                        .buttonStyle(.borderless)
+                        .help("刷新模板列表")
                     }
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.horizontal, 8)
@@ -155,6 +181,7 @@ struct TemplateLibraryView: View {
             .padding(.horizontal, 0)
             .padding(.vertical, 4)
             .padding(.leading, 12)
+            
             Spacer(minLength: 0)
         }
         .fileImporter(
@@ -165,12 +192,29 @@ struct TemplateLibraryView: View {
             switch result {
             case .success(let urls):
                 if let url = urls.first {
+                    // 启动安全范围访问
+                    _ = url.startAccessingSecurityScopedResource()
+                    defer { url.stopAccessingSecurityScopedResource() }
+                    
                     DispatchQueue.main.async {
                         viewModel.addTemplate(from: url)
                     }
                 }
             case .failure(let error):
                 NSLog("File picker error: \(error)")
+            }
+        }
+        .alert("删除模板", isPresented: $showingDeleteAlert) {
+            Button("取消", role: .cancel) { }
+            Button("删除", role: .destructive) {
+                if let template = templateToDelete {
+                    viewModel.removeTemplate(template.fileName)
+                    templateToDelete = nil
+                }
+            }
+        } message: {
+            if let template = templateToDelete {
+                Text("确定要删除模板 \"\(template.displayName)\" 吗？此操作无法撤销。")
             }
         }
         // (推荐): 在视图出现时，用 viewModel 的值初始化本地状态
@@ -180,6 +224,8 @@ struct TemplateLibraryView: View {
             } else {
                 selectedActionIndex = allActions.firstIndex(where: { $0 == nil })
             }
+            // 刷新模板列表
+            viewModel.loadTemplates()
         }
         // (修复第三步): 监听本地状态的变化，然后在这里更新 viewModel
         .onChange(of: selectedActionIndex) {
