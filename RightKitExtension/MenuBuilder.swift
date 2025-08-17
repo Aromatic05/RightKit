@@ -82,11 +82,8 @@ class MenuBuilder {
     }
     
     private func buildMenuItem(from menuItem: MenuItem) -> NSMenuItem {
-        // Determine dynamic title for Cut/Paste toggle
-        var displayedTitle = menuItem.name
-        if let action = menuItem.action, action.type == .cutFile {
-            displayedTitle = CutPasteState.shared.hasPendingCut() ? "粘贴文件" : "剪切文件"
-        }
+        // 使用扩展提供的动态标题
+        let displayedTitle = menuItem.displayTitle
         
         let nsMenuItem = NSMenuItem(title: displayedTitle, action: #selector(FinderSync.menuItemClicked(_:)), keyEquivalent: "")
         // 设置图标
@@ -95,10 +92,12 @@ class MenuBuilder {
             nsMenuItem.image = image
         }
         
-        // 记录菜单标题到动作的映射（使用显示标题，确保点击时能正确解析）
+        // 记录菜单标题到动作的映射（兼容旧逻辑），并把动作字符串放到 representedObject
         if let action = menuItem.action {
-            let actionString = "\(action.type.rawValue)|\(action.parameter ?? "")"
+            let param = action.parameter ?? ""
+            let actionString = "\(action.type.rawValue)|\(param)"
             titleToActionMap[displayedTitle] = actionString
+            nsMenuItem.representedObject = actionString
         }
         
         // 处理子菜单

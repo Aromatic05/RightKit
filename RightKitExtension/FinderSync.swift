@@ -99,8 +99,10 @@ class FinderSync: FIFinderSync {
         let target = FIFinderSyncController.default().targetedURL()
         let selectedItems = FIFinderSyncController.default().selectedItemURLs() ?? []
         
-        // 使用菜单标题来获取动作 - 这是最可靠的方法
-        if let actionString = MenuBuilder.shared.getAction(for: menuItem.title) {
+        // 优先从 representedObject 读取动作字符串，回退到标题映射
+        let actionString = (menuItem.representedObject as? String) ?? MenuBuilder.shared.getAction(for: menuItem.title)
+        
+        if let actionString = actionString {
             NSLog("RightKit: Processing action: %@", actionString)
             ActionHandler.shared.handleAction(actionString: actionString, targetURL: target, selectedItems: selectedItems)
         } else {
