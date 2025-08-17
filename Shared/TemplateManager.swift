@@ -11,9 +11,26 @@ import SwiftUI
 /// 模板管理器，负责处理模板文件夹的Security-Scoped Bookmarks
 class TemplateManager {
     
-    /// 存储模板文件夹书签的UserDefaults键
-    private static let templateFolderBookmarkKey = "templateFolderBookmark"
-    private static let templateFolderPathKey = "templateFolderPath" // 备用存储路径
+    /// App Group ID - 与ConfigurationManager保持一致
+    private static let appGroupID = "group.Aromatic.RightKit"
+    
+    /// 存储模板文件夹书签的文件名
+    private static let templateFolderBookmarkFileName = "templateFolderBookmark"
+    
+    /// 获取App Group容器URL
+    private static var containerURL: URL? {
+        return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID)
+    }
+    
+    /// 获取bookmark存储文件的完整路径
+    private static var bookmarkFileURL: URL? {
+        guard let containerURL = containerURL else { return nil }
+        return containerURL
+            .appendingPathComponent("Library")
+            .appendingPathComponent("Application Support")
+            .appendingPathComponent("RightKit")
+            .appendingPathComponent(templateFolderBookmarkFileName)
+    }
     
     /// 设置模板文件夹并创建Security-Scoped Bookmark
     static func setTemplateFolder(_ url: URL) -> Bool {
@@ -25,69 +42,64 @@ class TemplateManager {
             return false
         }
         
-        // 对于应用沙盒内的路径，直接存储路径而不是使用 bookmark
-        let isInAppContainer = url.path.contains("/Library/Containers/\(Bundle.main.bundleIdentifier ?? "")")
+        // 获取bookmark文件URL
+        guard let bookmarkURL = bookmarkFileURL else {
+            NSLog("Could not get App Group container URL")
+            return false
+        }
         
-        if isInAppContainer {
-            // 应用沙盒内的路径，直接存储
-            UserDefaults.standard.set(url.path, forKey: templateFolderPathKey)
-            UserDefaults.standard.removeObject(forKey: templateFolderBookmarkKey) // 清除旧的 bookmark
-            UserDefaults.standard.synchronize()
-            NSLog("Template folder path saved (sandbox): \(url.path)")
+        // 创建目录结构（如果不存在）
+        let directoryURL = bookmarkURL.deletingLastPathComponent()
+        do {
+            try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true, attributes: nil)
+        } catch {
+            NSLog("Error creating bookmark directory: \(error)")
+            return false
+        }
+        
+        // 使用 security-scoped bookmark
+        guard url.startAccessingSecurityScopedResource() else {
+            NSLog("Failed to access security scoped resource")
+            return false
+        }
+        
+        defer {
+            url.stopAccessingSecurityScopedResource()
+        }
+        
+        do {
+            let bookmarkData = try url.bookmarkData(
+                options: .withSecurityScope,
+                includingResourceValuesForKeys: nil,
+                relativeTo: nil
+            )
+            
+            // 将bookmark数据写入app group文件
+            try bookmarkData.write(to: bookmarkURL)
+            
+            NSLog("Template folder bookmark saved to app group: \(url.path)")
             return true
-        } else {
-            // 沙盒外的路径，使用 security-scoped bookmark
-            guard url.startAccessingSecurityScopedResource() else {
-                NSLog("Failed to access security scoped resource")
-                return false
-            }
-            
-            defer {
-                url.stopAccessingSecurityScopedResource()
-            }
-            
-            do {
-                let bookmarkData = try url.bookmarkData(
-                    options: .withSecurityScope,
-                    includingResourceValuesForKeys: nil,
-                    relativeTo: nil
-                )
-                
-                UserDefaults.standard.set(bookmarkData, forKey: templateFolderBookmarkKey)
-                UserDefaults.standard.removeObject(forKey: templateFolderPathKey) // 清除旧的路径
-                UserDefaults.standard.synchronize()
-                
-                NSLog("Template folder bookmark saved (security-scoped): \(url.path)")
-                return true
-            } catch {
-                NSLog("Error creating bookmark: \(error)")
-                return false
-            }
+        } catch {
+            NSLog("Error creating or saving bookmark: \(error)")
+            return false
         }
     }
     
     /// 获取模板文件夹URL
     static func getTemplateFolderURL() -> URL? {
-        // 优先检查是否有直接存储的路径（沙盒内）
-        if let savedPath = UserDefaults.standard.string(forKey: templateFolderPathKey) {
-            let url = URL(fileURLWithPath: savedPath)
-            if FileManager.default.fileExists(atPath: url.path) {
-                NSLog("Retrieved template folder from saved path: \(url.path)")
-                return url
-            } else {
-                NSLog("Saved path no longer exists, clearing: \(savedPath)")
-                UserDefaults.standard.removeObject(forKey: templateFolderPathKey)
-                UserDefaults.standard.synchronize()
-            }
+        guard let bookmarkURL = bookmarkFileURL else {
+            NSLog("Could not get App Group container URL")
+            return nil
         }
         
-        // 检查是否有 bookmark 数据（沙盒外）
-        guard let bookmarkData = UserDefaults.standard.data(forKey: templateFolderBookmarkKey) else {
-            NSLog("No template folder bookmark or path found")
+        // 检查bookmark文件是否存在
+        guard FileManager.default.fileExists(atPath: bookmarkURL.path) else {
+            NSLog("No template folder bookmark found")
             return nil
         }
         
         do {
+            let bookmarkData = try Data(contentsOf: bookmarkURL)
             var isStale = false
             let url = try URL(
                 resolvingBookmarkData: bookmarkData,
@@ -98,7 +110,6 @@ class TemplateManager {
             
             if isStale {
                 NSLog("Bookmark is stale for: \(url.path)")
-                // 不要在这里立即尝试重新创建，而是返回nil让上层处理
                 return nil
             }
             
@@ -106,8 +117,9 @@ class TemplateManager {
             return url
         } catch {
             NSLog("Error resolving bookmark: \(error)")
-            UserDefaults.standard.removeObject(forKey: templateFolderBookmarkKey)
-            UserDefaults.standard.synchronize()
+            // 删除无效的bookmark文件
+            
+//            try? FileManager.default.removeItem(at: bookmarkURL)
             return nil
         }
     }
@@ -335,19 +347,10 @@ class TemplateManager {
     static func initializeTemplateFolder() {
         NSLog("Initializing template folder...")
         
-        // 检查当前路径是否是旧的沙盒路径
+        // 检查当前是否有有效的模板文件夹配置
         if let currentURL = getTemplateFolderURL() {
-            let isOldSandboxPath = currentURL.path.contains("/Library/Containers/") &&
-                                   currentURL.path.contains("/Data/Documents/")
-            
-            if !isOldSandboxPath {
-                NSLog("Template folder already configured with valid path: \(currentURL.path)")
-                return
-            } else {
-                NSLog("Found old sandbox path, will clear and prompt user: \(currentURL.path)")
-                // 清理旧的沙盒配置
-                resetTemplateFolder()
-            }
+            NSLog("Template folder already configured with valid path: \(currentURL.path)")
+            return
         }
         
         NSLog("No valid template folder configured, prompting user to select...")
@@ -424,9 +427,21 @@ class TemplateManager {
     
     /// 重置模板文件夹配置
     static func resetTemplateFolder() {
-        UserDefaults.standard.removeObject(forKey: templateFolderPathKey)
-        UserDefaults.standard.removeObject(forKey: templateFolderBookmarkKey)
-        UserDefaults.standard.synchronize()
+        guard let bookmarkURL = bookmarkFileURL else {
+            NSLog("Could not get App Group container URL")
+            return
+        }
+        
+        // 删除bookmark文件
+        if FileManager.default.fileExists(atPath: bookmarkURL.path) {
+            do {
+                try FileManager.default.removeItem(at: bookmarkURL)
+                NSLog("Template folder bookmark file deleted")
+            } catch {
+                NSLog("Error deleting bookmark file: \(error)")
+            }
+        }
+        
         NSLog("Template folder configuration reset")
     }
     
