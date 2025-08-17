@@ -121,19 +121,28 @@ class ActionHandler {
     
     private func createFolder(name: String, in targetURL: URL?) {
         let targetDirectory = targetURL ?? URL(fileURLWithPath: NSHomeDirectory())
-        
         // 生成唯一的文件夹名，处理重复文件夹
-        let uniqueFolderURL = generateUniqueFolderURL(baseName: name, in: targetDirectory)
-        
-        NSLog("RightKit: Creating folder '%@' at: %@", uniqueFolderURL.lastPathComponent, targetDirectory.path)
-        
+        let uniqueFolderURL = targetDirectory.appendingPathComponent(name)
+        var finalFolderURL = uniqueFolderURL
+        let fileManager = FileManager.default
+        if fileManager.fileExists(atPath: uniqueFolderURL.path) {
+            // 自动加数字后缀
+            var counter = 1
+            repeat {
+                let candidate = targetDirectory.appendingPathComponent("\(name) \(counter)")
+                if !fileManager.fileExists(atPath: candidate.path) {
+                    finalFolderURL = candidate
+                    break
+                }
+                counter += 1
+            } while true
+        }
+        NSLog("RightKit: Creating folder '%@' at: %@", finalFolderURL.lastPathComponent, targetDirectory.path)
         do {
-            try FileManager.default.createDirectory(at: uniqueFolderURL, withIntermediateDirectories: false, attributes: nil)
-            NSLog("RightKit: Successfully created folder: %@", uniqueFolderURL.lastPathComponent)
-            
-            // 激活重命名功能
+            try fileManager.createDirectory(at: finalFolderURL, withIntermediateDirectories: false, attributes: nil)
+            NSLog("RightKit: Successfully created folder: %@", finalFolderURL.lastPathComponent)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                self.activateFileRename(for: uniqueFolderURL)
+                self.activateFileRename(for: finalFolderURL)
             }
         } catch {
             NSLog("RightKit: Error creating folder: %@", error.localizedDescription)
@@ -228,120 +237,9 @@ class ActionHandler {
     }
     
     // MARK: - Cut / Paste
-    
     /// 切换剪切/粘贴：有待粘贴则执行粘贴，否则开始剪切
     private func cutOrPaste(targetURL: URL?, selectedItems: [URL]) {
-        if CutPasteState.shared.hasPendingCut() {
-            pasteFiles(to: targetURL)
-        } else {
-            beginCut(selectedItems: selectedItems)
-        }
-    }
-    
-    /// 开始剪切：记录状态并写入粘贴板标记
-    private func beginCut(selectedItems: [URL]) {
-        guard !selectedItems.isEmpty else {
-            NSLog("RightKit: No files selected for cutting")
-            return
-        }
-        CutPasteState.shared.beginCut(urls: selectedItems)
-        NSLog("RightKit: Cut set with %d item(s)", selectedItems.count)
-    }
-    
-    /// 粘贴：将待剪切文件移动到目标目录，处理冲突与跨卷
-    private func pasteFiles(to targetURL: URL?) {
-        let pending = CutPasteState.shared.pendingCutURLs()
-        guard !pending.isEmpty else {
-            NSLog("RightKit: No pending cut to paste")
-            return
-        }
-        let destDir = resolvePasteDestination(targetURL)
-        NSLog("RightKit: Pasting %d item(s) to: %@", pending.count, destDir.path)
-        
-        var movedTargets: [URL] = []
-        for src in pending {
-            do {
-                let dest = makeUniqueDestination(for: src, in: destDir)
-                try moveItemSmart(from: src, to: dest)
-                movedTargets.append(dest)
-                NSLog("RightKit: Moved '%@' -> '%@'", src.lastPathComponent, dest.lastPathComponent)
-            } catch {
-                NSLog("RightKit: Paste failed for '%@': %@", src.path, error.localizedDescription)
-            }
-        }
-        
-        // 清除剪切状态
-        CutPasteState.shared.clear()
-        
-        // 在 Finder 中选中粘贴后的项目
-        if let first = movedTargets.first {
-            let root = first.deletingLastPathComponent().path
-            for url in movedTargets {
-                NSWorkspace.shared.selectFile(url.path, inFileViewerRootedAtPath: root)
-            }
-        }
-    }
-    
-    private func resolvePasteDestination(_ targetURL: URL?) -> URL {
-        let fm = FileManager.default
-        var dir = targetURL ?? URL(fileURLWithPath: NSHomeDirectory())
-        var isDir: ObjCBool = false
-        if fm.fileExists(atPath: dir.path, isDirectory: &isDir), !isDir.boolValue {
-            dir = dir.deletingLastPathComponent()
-        }
-        return dir
-    }
-    
-    private func makeUniqueDestination(for source: URL, in directory: URL) -> URL {
-        let fm = FileManager.default
-        var isDir: ObjCBool = false
-        fm.fileExists(atPath: source.path, isDirectory: &isDir)
-        let baseName = source.lastPathComponent
-        if isDir.boolValue {
-            return generateUniqueFolderURL(baseName: baseName, in: directory)
-        } else {
-            return generateUniqueFileURL(baseName: baseName, in: directory)
-        }
-    }
-    
-    /// Move with cross-volume fallback (copy+remove)
-    private func moveItemSmart(from src: URL, to dst: URL) throws {
-        let fm = FileManager.default
-        // If same parent directory, moving to new name is a rename; allow unique name already handled.
-        do {
-            try fm.moveItem(at: src, to: dst)
-        } catch {
-            // Try copy and delete as a fallback (e.g., EXDEV)
-            do {
-                try fm.copyItem(at: src, to: dst)
-                try fm.removeItem(at: src)
-            } catch {
-                throw error
-            }
-        }
-    }
-    
-    /// 生成唯一的文件夹URL，处理重复文件夹名
-    private func generateUniqueFolderURL(baseName: String, in directory: URL) -> URL {
-        let fileManager = FileManager.default
-        let baseURL = directory.appendingPathComponent(baseName)
-        
-        // 如果文件夹不存在，直接返回原始名称
-        if !fileManager.fileExists(atPath: baseURL.path) {
-            return baseURL
-        }
-        
-        // 生成带数字后缀的唯一文件夹名
-        var counter = 1
-        var uniqueURL: URL
-        
-        repeat {
-            let uniqueName = "\(baseName) \(counter)"
-            uniqueURL = directory.appendingPathComponent(uniqueName)
-            counter += 1
-        } while fileManager.fileExists(atPath: uniqueURL.path)
-        
-        return uniqueURL
+        CutPasteState.shared.cutOrPaste(targetURL: targetURL, selectedItems: selectedItems)
     }
     
     /// 激活文件/文件夹的重命名功能 - 使用有效的方法
