@@ -59,37 +59,7 @@ struct TemplateInfo: Codable, Identifiable, Equatable, Transferable, Hashable {
 
 // MARK: - UI Extensions
 
-extension MenuItem {
-    /// 获取菜单项的类型描述
-    var typeDescription: String {
-        if let action = action {
-            switch action.type {
-            case .createEmptyFile:
-                return "新建空文件"
-            case .createFileFromTemplate:
-                return "模板文件"
-            case .createFolder:
-                return "新建文件夹"
-            case .openTerminal:
-                return "打开终端"
-            case .copyFilePath:
-                return "复制路径"
-            case .cutFile:
-                return "剪切文件"
-            case .runShellScript:
-                return "运行脚本"
-            case .separator:
-                return "分隔线"
-            }
-        }
-        
-        if action == nil {
-            return "子菜单"
-        }
-        
-        return "未知"
-    }
-    
+extension MenuItem {    
     /// 判断是否为分隔线
     var isSeparator: Bool {
         return action?.type == .separator

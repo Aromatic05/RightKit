@@ -80,7 +80,7 @@ struct MenuItemDetailEditor: View {
                     Text("类型")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    Text(item.typeDescription)
+                    Text(ActionTypeUtils.displayName(for: item.action?.type))
                         .font(.body)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)

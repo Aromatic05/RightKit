@@ -79,7 +79,7 @@ struct MenuItemTreeView: View {
                 Spacer()
                 
                 // 类型标识
-                Text(item.typeDescription)
+                Text(ActionTypeUtils.displayName(for: item.action?.type))
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .padding(.horizontal, 6)
