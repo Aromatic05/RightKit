@@ -189,6 +189,8 @@ struct MenuItemTreeView: View {
                 return .orange
             case .cutFile:
                 return .red
+            case .openWithApp:
+                return .yellow
             case .runShellScript:
                 return .purple
             }

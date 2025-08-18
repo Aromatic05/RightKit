@@ -89,7 +89,7 @@ struct MenuItemDetailEditor: View {
                                     Image(systemName: "folder")
                                 }
                                 .buttonStyle(.borderless)
-                                .help("选择脚本文件")
+                                .help("选择文件")
                             }
                         }
                     }

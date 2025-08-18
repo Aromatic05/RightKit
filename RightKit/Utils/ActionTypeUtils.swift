@@ -13,6 +13,7 @@ struct ActionTypeUtils {
             case .copyFilePath: return "复制路径"
             case .cutFile: return "剪切文件"
             case .runShellScript: return "运行脚本"
+            case .openWithApp: return "用...打开"
             case .separator: return "分隔线"
             }
         } else {
@@ -28,6 +29,7 @@ struct ActionTypeUtils {
         case .copyFilePath: return "doc.on.doc"
         case .cutFile: return "scissors"
         case .runShellScript: return "play"
+        case .openWithApp: return "app"
         case .separator: return "minus"
         }
     }
@@ -39,6 +41,8 @@ struct ActionTypeUtils {
             return "模板文件名"
         case .runShellScript:
             return "脚本文件路径"
+        case .openWithApp:
+            return "应用程序路径"
         default:
             return "参数"
         }
@@ -51,13 +55,15 @@ struct ActionTypeUtils {
             return "template.txt"
         case .runShellScript:
             return "/path/to/script.sh"
+        case .openWithApp:
+            return "/Applications/YourApp.app"
         default:
             return "参数值"
         }
     }
     static func shouldShowParameterEditor(for type: ActionType) -> Bool {
         switch type {
-        case .createEmptyFile, .createFileFromTemplate, .runShellScript:
+        case .createEmptyFile, .createFileFromTemplate, .runShellScript, .openWithApp:
             return true
         default:
             return false
@@ -66,6 +72,8 @@ struct ActionTypeUtils {
     static func shouldShowFilePicker(for type: ActionType) -> Bool {
         switch type {
         case .runShellScript:
+            return true
+        case .openWithApp:
             return true
         default:
             return false
@@ -76,6 +84,8 @@ struct ActionTypeUtils {
         switch type {
         case .runShellScript:
             return [.shellScript]
+        case .openWithApp:
+            return [.application, .executable]
         default:
             return [.item]
         }

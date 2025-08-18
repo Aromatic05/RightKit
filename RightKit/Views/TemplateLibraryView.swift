@@ -30,6 +30,7 @@ struct TemplateLibraryView: View {
             .copyFilePath,
             .cutFile,
             .runShellScript,
+            .openWithApp,
             .separator,
             nil // nil 表示"子菜单"
         ]

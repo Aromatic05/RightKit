@@ -32,6 +32,7 @@ enum ActionType: String, Codable {
     case copyFilePath
     case cutFile
     case runShellScript
+    case openWithApp        // 添加打开应用动作
     case separator          // 添加分隔线动作
 }
 

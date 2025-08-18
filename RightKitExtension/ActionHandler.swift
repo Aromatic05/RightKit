@@ -36,13 +36,15 @@ class ActionHandler {
         case "createFolder":
             createFolder(name: parameter.isEmpty ? "新建文件夹" : parameter, in: targetURL)
         case "openTerminal":
-            openTerminal(at: targetURL)
+            openTerminal(at: selectedItems.first ?? targetURL)
         case "copyFilePath":
             copyFilePath(targetURL: targetURL, selectedItems: selectedItems)
         case "runShellScript":
             runShellScript(scriptPath: parameter, at: targetURL)
         case "cutFile":
             cutOrPaste(targetURL: targetURL, selectedItems: selectedItems)
+        case "openWithApp":
+            openWithApp(appUrl: URL(filePath: parameter), targetURL: selectedItems.first ?? targetURL)
         default:
             NSLog("RightKit: Unknown action type: %@", actionType)
         }
@@ -195,6 +197,24 @@ class ActionHandler {
         process.launchPath = "/usr/bin/open"
         process.arguments = ["-a", "Terminal", scriptPath]
         process.launch()
+    }
+    
+    private func openWithApp(appUrl: URL, targetURL: URL?) {
+        guard let fileURL = targetURL else {
+            NSLog("RightKit: openWithApp called with nil targetURL")
+            return
+        }
+        NSLog("RightKit: Opening %@ with app at %@", fileURL.path, appUrl.path)
+        let configuration = NSWorkspace.OpenConfiguration()
+        NSWorkspace.shared.open([fileURL], withApplicationAt: appUrl, configuration: configuration) { app, error in
+            if let error = error {
+                NSLog("RightKit: Failed to open %@ with app %@: %@", fileURL.path, appUrl.path, error.localizedDescription)
+            } else if app == nil {
+                NSLog("RightKit: App launched but NSRunningApplication is nil for %@ with app %@", fileURL.path, appUrl.path)
+            } else {
+                NSLog("RightKit: Successfully opened %@ with app %@", fileURL.path, appUrl.path)
+            }
+        }
     }
     
     private func copyFilePath(targetURL: URL?, selectedItems: [URL]) {
