@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ActionTypeUtils {
     static func displayName(for type: ActionType?) -> String {
@@ -37,7 +38,7 @@ struct ActionTypeUtils {
         case .createFileFromTemplate:
             return "模板文件名"
         case .runShellScript:
-            return "脚本命令"
+            return "脚本文件路径"
         default:
             return "参数"
         }
@@ -49,7 +50,7 @@ struct ActionTypeUtils {
         case .createFileFromTemplate:
             return "template.txt"
         case .runShellScript:
-            return "echo 'Hello World'"
+            return "/path/to/script.sh"
         default:
             return "参数值"
         }
@@ -60,6 +61,23 @@ struct ActionTypeUtils {
             return true
         default:
             return false
+        }
+    }
+    static func shouldShowFilePicker(for type: ActionType) -> Bool {
+        switch type {
+        case .runShellScript:
+            return true
+        default:
+            return false
+        }
+    }
+    
+    static func allowedContentTypes(for type: ActionType) -> [UTType] {
+        switch type {
+        case .runShellScript:
+            return [.shellScript]
+        default:
+            return [.item]
         }
     }
 }

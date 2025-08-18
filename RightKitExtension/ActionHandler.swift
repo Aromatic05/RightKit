@@ -39,6 +39,8 @@ class ActionHandler {
             openTerminal(at: targetURL)
         case "copyFilePath":
             copyFilePath(targetURL: targetURL, selectedItems: selectedItems)
+        case "runShellScript":
+            runShellScript(scriptPath: parameter, at: targetURL)
         case "cutFile":
             cutOrPaste(targetURL: targetURL, selectedItems: selectedItems)
         default:
@@ -163,6 +165,14 @@ class ActionHandler {
         }
     }
     
+    private func getTerminal() -> String {
+        ConfigurationManager.ensureDetectScriptExists()
+        let scriptURL = ConfigurationManager.detectScriptURL
+        let appURL = scriptURL.flatMap { NSWorkspace.shared.urlForApplication(toOpen: $0) }
+        let terminalAppPath = appURL?.path ?? "Terminal"
+        return terminalAppPath
+    }
+    
     private func openTerminal(at targetURL: URL?) {
         // 优先使用目标目录，如果是文件则取父目录
         var targetDirectory = targetURL ?? URL(fileURLWithPath: NSHomeDirectory())
@@ -172,13 +182,18 @@ class ActionHandler {
         }
         NSLog("RightKit: Opening terminal at: %@ (using user's default .sh handler)", targetDirectory.path)
         // 确保检测脚本存在
-        ConfigurationManager.ensureDetectScriptExists()
-        let scriptURL = ConfigurationManager.detectScriptURL
-        let appURL = scriptURL.flatMap { NSWorkspace.shared.urlForApplication(toOpen: $0) }
-        let terminalAppPath = appURL?.path ?? "Terminal"
+        let terminalAppPath = getTerminal()
         let process = Process()
         process.launchPath = "/usr/bin/open"
         process.arguments = ["-a", terminalAppPath, targetDirectory.path]
+        process.launch()
+    }
+    
+    private func runShellScript(scriptPath: String, at targetURL: URL?) {
+        var target = targetURL ?? URL(fileURLWithPath: NSHomeDirectory())
+        let process = Process()
+        process.launchPath = "/usr/bin/open"
+        process.arguments = ["-a", "Terminal", scriptPath]
         process.launch()
     }
     

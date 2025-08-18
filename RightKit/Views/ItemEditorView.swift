@@ -72,8 +72,26 @@ struct MenuItemDetailEditor: View {
                         Text(ActionTypeUtils.parameterLabel(for: action.type))
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        TextField(ActionTypeUtils.parameterPlaceholder(for: action.type), text: $editedParameter)
-                            .textFieldStyle(.roundedBorder)
+                        HStack {
+                            TextField(ActionTypeUtils.parameterPlaceholder(for: action.type), text: $editedParameter)
+                                .textFieldStyle(.roundedBorder)
+                            if ActionTypeUtils.shouldShowFilePicker(for: action.type) {
+                                Button {
+                                    let panel = NSOpenPanel()
+                                    panel.canChooseFiles = true
+                                    panel.canChooseDirectories = false
+                                    panel.allowsMultipleSelection = false
+                                    panel.allowedContentTypes = ActionTypeUtils.allowedContentTypes(for: action.type)
+                                    if panel.runModal() == .OK, let url = panel.url {
+                                        editedParameter = url.path
+                                    }
+                                } label: {
+                                    Image(systemName: "folder")
+                                }
+                                .buttonStyle(.borderless)
+                                .help("选择脚本文件")
+                            }
+                        }
                     }
                 }
                 VStack(alignment: .leading, spacing: 4) {
