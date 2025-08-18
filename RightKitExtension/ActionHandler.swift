@@ -32,7 +32,7 @@ class ActionHandler {
         case "createEmptyFile":
             createEmptyFile(extension: parameter.isEmpty ? "txt" : parameter, in: targetURL)
         case "createFileFromTemplate":
-            createFileFromTemplate(extension: parameter.isEmpty ? "txt" : parameter, in: targetURL)
+            createFileFromTemplate(parameter: parameter.isEmpty ? "template.txt" : parameter, in: targetURL)
         case "createFolder":
             createFolder(name: parameter.isEmpty ? "新建文件夹" : parameter, in: targetURL)
         case "openTerminal":
@@ -75,16 +75,29 @@ class ActionHandler {
         }
     }
     
-    private func createFileFromTemplate(extension fileExtension: String, in targetURL: URL?) {
+    private func createFileFromTemplate(parameter: String, in targetURL: URL?) {
         let targetDirectory = targetURL ?? URL(fileURLWithPath: NSHomeDirectory())
-        let defaultFileName = generateDefaultFileName(for: fileExtension)
-        let uniqueFileURL = generateUniqueFileURL(baseName: defaultFileName, in: targetDirectory)
-        NSLog("RightKit: Creating file from template '%@' in directory: %@", uniqueFileURL.lastPathComponent, targetDirectory.path)
-        let templateFileName = "template.\(fileExtension)"
-        var templateCopied = false
+        var templateFileName: String
+        var targetFileName: String
         
+        // 判断参数是扩展名还是完整文件名
+        if parameter.isEmpty {
+            templateFileName = "template.txt"
+            targetFileName = generateDefaultFileName(for: "txt")
+        } else if !parameter.contains(".") && parameter.range(of: "[^a-zA-Z0-9]", options: .regularExpression) == nil {
+            // 仅为扩展名且无特殊字符
+            templateFileName = "template.\(parameter)"
+            targetFileName = generateDefaultFileName(for: parameter)
+        } else {
+            // 认为是完整文件名
+            templateFileName = parameter
+            targetFileName = parameter
+        }
+        let uniqueFileURL = generateUniqueFileURL(baseName: targetFileName, in: targetDirectory)
+        NSLog("RightKit: Creating file from template '%@' in directory: %@", uniqueFileURL.lastPathComponent, targetDirectory.path)
+        var templateCopied = false
+
         if let templateFolderURL = TemplateManager.getTemplateFolderURL() {
-            // Extension不需要startAccessingSecurityScopedResource调用
             let templateFileURL = templateFolderURL.appendingPathComponent(templateFileName)
             if FileManager.default.fileExists(atPath: templateFileURL.path) {
                 do {
@@ -100,9 +113,9 @@ class ActionHandler {
         } else {
             NSLog("RightKit: Template folder not configured or cannot access")
         }
-        
+
         if templateCopied {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 self.activateFileRename(for: uniqueFileURL)
             }
         } else {
@@ -111,7 +124,7 @@ class ActionHandler {
             let success = fileManager.createFile(atPath: uniqueFileURL.path, contents: nil, attributes: nil)
             if success {
                 NSLog("RightKit: Successfully created empty file as fallback: %@", uniqueFileURL.lastPathComponent)
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     self.activateFileRename(for: uniqueFileURL)
                 }
             } else {
