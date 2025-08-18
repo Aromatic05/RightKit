@@ -164,27 +164,22 @@ class ActionHandler {
     }
     
     private func openTerminal(at targetURL: URL?) {
-        let targetDirectory = targetURL ?? URL(fileURLWithPath: NSHomeDirectory())
-        
-        NSLog("RightKit: Opening terminal at: %@", targetDirectory.path)
-        
-        let script = """
-        tell application "Terminal"
-            activate
-            do script "cd '\(targetDirectory.path)'"
-        end tell
-        """
-        
-        if let appleScript = NSAppleScript(source: script) {
-            var errorDict: NSDictionary?
-            appleScript.executeAndReturnError(&errorDict)
-            
-            if let error = errorDict {
-                NSLog("RightKit: Error opening terminal: %@", error.description)
-            } else {
-                NSLog("RightKit: Successfully opened terminal")
-            }
+        // 优先使用目标目录，如果是文件则取父目录
+        var targetDirectory = targetURL ?? URL(fileURLWithPath: NSHomeDirectory())
+        var isDirectory: ObjCBool = false
+        if let url = targetURL, !FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) || !isDirectory.boolValue {
+            targetDirectory = url.deletingLastPathComponent()
         }
+        NSLog("RightKit: Opening terminal at: %@ (using user's default .sh handler)", targetDirectory.path)
+        // 确保检测脚本存在
+        ConfigurationManager.ensureDetectScriptExists()
+        let scriptURL = ConfigurationManager.detectScriptURL
+        let appURL = scriptURL.flatMap { NSWorkspace.shared.urlForApplication(toOpen: $0) }
+        let terminalAppPath = appURL?.path ?? "Terminal"
+        let process = Process()
+        process.launchPath = "/usr/bin/open"
+        process.arguments = ["-a", terminalAppPath, targetDirectory.path]
+        process.launch()
     }
     
     private func copyFilePath(targetURL: URL?, selectedItems: [URL]) {

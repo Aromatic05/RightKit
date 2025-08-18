@@ -25,6 +25,9 @@ class ConfigurationManager {
     /// 通知名称
     static let configUpdateNotificationName = "com.aromatic.RightKit.configUpdated"
     
+    /// App Group内持久化的sh检测脚本文件名
+    static let detectScriptFileName = "rightkit_terminal_detect.sh"
+    
     /// 获取App Group容器URL
     static var containerURL: URL? {
         return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID)
@@ -48,6 +51,16 @@ class ConfigurationManager {
             .appendingPathComponent("Application Support")
             .appendingPathComponent("RightKit")
             .appendingPathComponent("Templates")
+    }
+    
+    /// 获取App Group内持久化的sh检测脚本URL
+    static var detectScriptURL: URL? {
+        guard let containerURL = containerURL else { return nil }
+        return containerURL
+            .appendingPathComponent("Library")
+            .appendingPathComponent("Application Support")
+            .appendingPathComponent("RightKit")
+            .appendingPathComponent(detectScriptFileName)
     }
     
     /// 初始化默认配置
@@ -216,6 +229,24 @@ class ConfigurationManager {
         } catch {
             NSLog("Error loading configuration: \(error), returning default configuration")
             return Self.createDefaultConfiguration()
+        }
+    }
+    
+    /// 确保检测脚本存在，若不存在则创建
+    static func ensureDetectScriptExists() {
+        guard let scriptURL = detectScriptURL else { return }
+        if !FileManager.default.fileExists(atPath: scriptURL.path) {
+            let scriptContent = "#!/bin/sh\necho rightkit_detect\n"
+            do {
+                // 创建目录结构
+                let directoryURL = scriptURL.deletingLastPathComponent()
+                try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true, attributes: nil)
+                try scriptContent.write(to: scriptURL, atomically: true, encoding: .utf8)
+                let attributes: [FileAttributeKey: Any] = [.posixPermissions: 0o755]
+                try FileManager.default.setAttributes(attributes, ofItemAtPath: scriptURL.path)
+            } catch {
+                NSLog("Error creating detect script: \(error)")
+            }
         }
     }
 }
