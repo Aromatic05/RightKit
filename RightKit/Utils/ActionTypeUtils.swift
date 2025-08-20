@@ -35,7 +35,7 @@ struct ActionTypeUtils {
         case .runShellScript: return "play"
         case .openWithApp: return "app"
         case .sendToDesktop: return "desktopcomputer"
-        case .hashFile: return "hash"
+        case .hashFile: return "number" // changed from "hash" to valid SF Symbol
         case .deleteFile: return "trash"
         case .showHiddenFiles: return "eye.slash"
         case .separator: return "minus"

@@ -13,7 +13,7 @@ struct DefaultNameUtils {
         // ActionType icons (for Picker, mapping is handled elsewhere)
         "doc", "doc.badge.plus", "folder", "terminal", "doc.on.doc", "scissors", "play", "app", "minus",
         // Icons from ConfigurationManager default config
-        "doc.text.below.ecg", "folder.badge.plus", "wrench.and.screwdriver", "doc.on.clipboard", "desktopcomputer", "hash", "trash", "eye.slash"
+        "doc.text.below.ecg", "folder.badge.plus", "wrench.and.screwdriver", "doc.on.clipboard", "desktopcomputer", "number", "trash", "eye.slash"
     ]
 
     private static let extensionToIcon: [String: String] = [
@@ -127,7 +127,7 @@ struct DefaultNameUtils {
         case .sendToDesktop:
             return "desktopcomputer"
         case .hashFile:
-            return "hash"
+            return "number"
         case .deleteFile:
             return "trash"
         case .showHiddenFiles:
