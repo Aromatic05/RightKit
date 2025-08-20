@@ -297,13 +297,21 @@ class ActionHandler {
     }
     
     private func showHiddenFiles() {
-        // 切换隐藏文件显示状态
-        let defaults = UserDefaults.standard
-        let currentState = defaults.bool(forKey: "AppleShowAllFiles")
+        // 切换 Finder 的隐藏文件显示状态
+        let task = Process()
+        let pipe = Pipe()
+        task.standardOutput = pipe
+        task.standardError = pipe
+        let currentState = UserDefaults.standard.bool(forKey: "AppleShowAllFiles")
         let newState = !currentState
-        
-        // 更新用户默认设置
-        defaults.set(newState, forKey: "AppleShowAllFiles")
+        let value = newState ? "TRUE" : "FALSE"
+        let script = "defaults write com.apple.finder AppleShowAllFiles -bool \(value); killall Finder"
+        task.launchPath = "/bin/bash"
+        task.arguments = ["-c", script]
+        task.launch()
+        task.waitUntilExit()
+        UserDefaults.standard.set(newState, forKey: "AppleShowAllFiles")
+        NSLog("RightKit: Set AppleShowAllFiles to %@ and restarted Finder", value)
     }
     
     private func copyFilePath(targetURL: URL?, selectedItems: [URL]) {
