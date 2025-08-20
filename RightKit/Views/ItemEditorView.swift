@@ -32,6 +32,25 @@ struct MenuItemDetailEditor: View {
         editedIcon != (item.icon ?? "") ||
         editedParameter != (item.action?.parameter ?? "")
     }
+    private func validIcon(_ icon: String?) -> String {
+        let icons = DefaultNameUtils.availableIcons
+        guard let icon = icon, icons.contains(icon), !icon.isEmpty else {
+            return icons.first ?? "doc"
+        }
+        return icon
+    }
+    private var iconBinding: Binding<String> {
+        Binding<String>(
+            get: {
+                let icons = DefaultNameUtils.availableIcons
+                return icons.contains(editedIcon) && !editedIcon.isEmpty ? editedIcon : (icons.first ?? "doc")
+            },
+            set: { newValue in
+                let icons = DefaultNameUtils.availableIcons
+                editedIcon = icons.contains(newValue) && !newValue.isEmpty ? newValue : (icons.first ?? "doc")
+            }
+        )
+    }
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("编辑菜单项")
@@ -55,7 +74,7 @@ struct MenuItemDetailEditor: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                     HStack {
-                        Picker(selection: $editedIcon, label: Text("选择图标")) {
+                        Picker(selection: iconBinding, label: Text("选择图标")) {
                             ForEach(DefaultNameUtils.availableIcons, id: \.self) { iconName in
                                 HStack {
                                     Image(systemName: iconName)
@@ -144,21 +163,21 @@ struct MenuItemDetailEditor: View {
         .onAppear {
             if let item = item {
                 editedName = item.name
-                editedIcon = item.icon ?? ""
+                editedIcon = validIcon(item.icon)
                 editedParameter = item.action?.parameter ?? ""
             }
         }
         .onChange(of: itemId) { newId, _ in
             if let item = self.item {
                 editedName = item.name
-                editedIcon = item.icon ?? ""
+                editedIcon = validIcon(item.icon)
                 editedParameter = item.action?.parameter ?? ""
             }
         }
         .onChange(of: item) { newItem, _ in
             if let item = newItem {
                 editedName = item.name
-                editedIcon = item.icon ?? ""
+                editedIcon = validIcon(item.icon)
                 editedParameter = item.action?.parameter ?? ""
             }
         }

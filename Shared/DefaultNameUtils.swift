@@ -9,7 +9,7 @@ struct DefaultNameUtils {
     // Centralized icon set
     private static let allIconNames: Set<String> = [
         // File extension icons
-        "doc.plaintext", "text.book.closed", "swift", "terminal", "globe", "paintbrush", "function", "braces", "doc.text", "doc.richtext", "tablecells", "rectangle.on.rectangle.angled", "archivebox", "photo", "music.note", "film",
+        "doc.plaintext", "text.book.closed", "swift", "terminal", "globe", "paintbrush", "f.cursive", "curlybraces", "doc.text", "doc.richtext", "table", "rectangle.on.rectangle.angled", "archivebox", "photo", "music.note", "film",
         // ActionType icons (for Picker, mapping is handled elsewhere)
         "doc", "doc.badge.plus", "folder", "terminal", "doc.on.doc", "scissors", "play", "app", "minus",
         // Icons from ConfigurationManager default config
@@ -24,15 +24,15 @@ struct DefaultNameUtils {
         "html": "globe",
         "htm": "globe",
         "css": "paintbrush",
-        "js": "function",
-        "json": "braces",
+        "js": "f.cursive",
+        "json": "curlybraces",
         "yaml": "doc.text",
         "yml": "doc.text",
         "pdf": "doc.richtext",
         "doc": "doc.text",
         "docx": "doc.text",
-        "xls": "tablecells",
-        "xlsx": "tablecells",
+        "xls": "table",
+        "xlsx": "table",
         "ppt": "rectangle.on.rectangle.angled",
         "pptx": "rectangle.on.rectangle.angled",
         "zip": "archivebox",
@@ -46,7 +46,7 @@ struct DefaultNameUtils {
         "mp4": "film",
         "mov": "film",
         "avi": "film",
-        "csv": "tablecells",
+        "csv": "table",
         "rtf": "doc.richtext"
     ]
 
