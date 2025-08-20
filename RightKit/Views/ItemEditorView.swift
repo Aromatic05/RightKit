@@ -55,16 +55,31 @@ struct MenuItemDetailEditor: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                     HStack {
-                        TextField("图标名称", text: $editedIcon)
-                            .textFieldStyle(.roundedBorder)
-                            .onSubmit {
-                                viewModel.updateMenuItem(item, icon: editedIcon.isEmpty ? nil : editedIcon)
+                        Picker(selection: $editedIcon, label: Text("选择图标")) {
+                            ForEach(DefaultNameUtils.availableIcons, id: \.self) { iconName in
+                                HStack {
+                                    Image(systemName: iconName)
+                                        .frame(width: 20)
+                                    Text(iconName)
+                                }
+                                .tag(iconName)
                             }
+                        }
+                        .frame(maxWidth: 200)
                         if !editedIcon.isEmpty {
                             Image(systemName: editedIcon)
                                 .foregroundColor(.accentColor)
                                 .frame(width: 20)
                         }
+                        Button {
+                            if let actionType = item.action?.type {
+                                editedIcon = DefaultNameUtils.suggestIcon(for: editedParameter, actionType: actionType)
+                            }
+                        } label: {
+                            Image(systemName: "wand.and.stars")
+                        }
+                        .buttonStyle(.borderless)
+                        .help("根据内容生成图标")
                     }
                 }
                 if let action = item.action, ActionTypeUtils.shouldShowParameterEditor(for: action.type) {

@@ -6,6 +6,16 @@
 //
 
 struct DefaultNameUtils {
+    // Centralized icon set
+    private static let allIconNames: Set<String> = [
+        // File extension icons
+        "doc.plaintext", "text.book.closed", "swift", "terminal", "globe", "paintbrush", "function", "braces", "doc.text", "doc.richtext", "tablecells", "rectangle.on.rectangle.angled", "archivebox", "photo", "music.note", "film",
+        // ActionType icons (for Picker, mapping is handled elsewhere)
+        "doc", "doc.badge.plus", "folder", "terminal", "doc.on.doc", "scissors", "play", "app", "minus",
+        // Icons from ConfigurationManager default config
+        "doc.text.below.ecg", "folder.badge.plus", "wrench.and.screwdriver", "doc.on.clipboard"
+    ]
+
     private static let extensionToIcon: [String: String] = [
         "txt": "doc.plaintext",
         "md": "text.book.closed",
@@ -39,7 +49,7 @@ struct DefaultNameUtils {
         "csv": "tablecells",
         "rtf": "doc.richtext"
     ]
-    
+
     private static let extensionToDefaultName: [String: String] = [
         "txt": "新建文本文件.txt",
         "swift": "新建Swift文件.swift",
@@ -73,6 +83,8 @@ struct DefaultNameUtils {
         "yml": "新建YAML文件.yml"
     ]
 
+    static let availableIcons: [String] = Array(allIconNames).sorted()
+
     static func iconForFileExtension(_ ext: String) -> String {
         let key = ext.lowercased()
         return extensionToIcon[key] ?? "doc"
@@ -82,5 +94,43 @@ struct DefaultNameUtils {
     static func generateDefaultFileName(for fileExtension: String) -> String {
         let key = fileExtension.lowercased()
         return extensionToDefaultName[key] ?? "新建文件.\(fileExtension)"
+    }
+    
+    // 根据参数内容和类型智能推荐图标
+    static func suggestIcon(for parameter: String, actionType: ActionType) -> String {
+        let param = parameter.trimmingCharacters(in: .whitespacesAndNewlines)
+        switch actionType {
+        case .createEmptyFile:
+            // 取扩展名
+            let ext = param.lowercased()
+            return DefaultNameUtils.iconForFileExtension(ext)
+        case .createFileFromTemplate:
+            // 取模板文件扩展名
+            if let ext = param.split(separator: ".").last {
+                return DefaultNameUtils.iconForFileExtension(String(ext))
+            }
+            return "doc"
+        case .runShellScript:
+            if param.hasSuffix(".sh") { return "terminal" }
+            return "play"
+        case .openWithApp:
+            if param.hasSuffix(".app") { return "app" }
+            return "app"
+        case .createFolder:
+            return "folder"
+        case .copyFilePath, .cutFile:
+            return "doc.on.doc"
+        case .openTerminal:
+            return "terminal"
+        case .separator:
+            return "minus"
+        }
+    }
+}
+
+extension Array where Element: Hashable {
+    func removingDuplicates() -> [Element] {
+        var seen = Set<Element>()
+        return filter { seen.insert($0).inserted }
     }
 }
