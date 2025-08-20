@@ -33,34 +33,30 @@ class ConfigurationManager {
         return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID)
     }
     
-    /// 获取配置文件的完整路径
-    static var configFileURL: URL? {
-        guard let containerURL = containerURL else { return nil }
-        return containerURL
+    /// App Group内 RightKit 基础目录 URL: ~/Library/Application Support/RightKit
+    static var rightKitBaseDirectoryURL: URL? {
+        containerURL?
             .appendingPathComponent("Library")
             .appendingPathComponent("Application Support")
             .appendingPathComponent("RightKit")
-            .appendingPathComponent(configFileName)
+    }
+    
+    /// 获取配置文件的完整路径
+    static var configFileURL: URL? {
+        guard let base = rightKitBaseDirectoryURL else { return nil }
+        return base.appendingPathComponent(configFileName)
     }
     
     /// 获取模板目录URL
     static var templatesDirectoryURL: URL? {
-        guard let containerURL = containerURL else { return nil }
-        return containerURL
-            .appendingPathComponent("Library")
-            .appendingPathComponent("Application Support")
-            .appendingPathComponent("RightKit")
-            .appendingPathComponent("Templates")
+        guard let base = rightKitBaseDirectoryURL else { return nil }
+        return base.appendingPathComponent("Templates")
     }
     
     /// 获取App Group内持久化的sh检测脚本URL
     static var detectScriptURL: URL? {
-        guard let containerURL = containerURL else { return nil }
-        return containerURL
-            .appendingPathComponent("Library")
-            .appendingPathComponent("Application Support")
-            .appendingPathComponent("RightKit")
-            .appendingPathComponent(detectScriptFileName)
+        guard let base = rightKitBaseDirectoryURL else { return nil }
+        return base.appendingPathComponent(detectScriptFileName)
     }
     
     /// 初始化默认配置
