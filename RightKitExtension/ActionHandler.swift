@@ -56,7 +56,7 @@ class ActionHandler {
         let targetDirectory = targetURL ?? URL(fileURLWithPath: NSHomeDirectory())
         
         // 根据扩展名生成默认文件名
-        let defaultFileName = generateDefaultFileName(for: fileExtension)
+        let defaultFileName = DefaultNameUtils.generateDefaultFileName(for: fileExtension)
         
         // 生成唯一的文件名，处理重复文件
         let uniqueFileURL = generateUniqueFileURL(baseName: defaultFileName, in: targetDirectory)
@@ -87,11 +87,11 @@ class ActionHandler {
         // 判断参数是扩展名还是完整文件名
         if parameter.isEmpty {
             templateFileName = "template.txt"
-            targetFileName = generateDefaultFileName(for: "txt")
+            targetFileName = DefaultNameUtils.generateDefaultFileName(for: "txt")
         } else if !parameter.contains(".") && parameter.range(of: "[^a-zA-Z0-9]", options: .regularExpression) == nil {
             // 仅为扩展名且无特殊字符
             templateFileName = "template.\(parameter)"
-            targetFileName = generateDefaultFileName(for: parameter)
+            targetFileName = DefaultNameUtils.generateDefaultFileName(for: parameter)
         } else {
             // 认为是完整文件名
             templateFileName = parameter
@@ -294,31 +294,6 @@ class ActionHandler {
         DispatchQueue.main.async {
             let targetDirectory = fileURL.deletingLastPathComponent()
             NSWorkspace.shared.selectFile(fileURL.path, inFileViewerRootedAtPath: targetDirectory.path)
-        }
-    }
-    
-    /// 生成指定扩展名的默认文件名
-    private func generateDefaultFileName(for fileExtension: String) -> String {
-        // 根据文件类型生成简洁的默认名称
-        switch fileExtension.lowercased() {
-        case "txt":
-            return "新建文本文件.txt"
-        case "swift":
-            return "新建Swift文件.swift"
-        case "md":
-            return "新建Markdown文件.md"
-        case "json":
-            return "新建JSON文件.json"
-        case "py":
-            return "新建Python文件.py"
-        case "js":
-            return "新建JavaScript文件.js"
-        case "html":
-            return "新建HTML文件.html"
-        case "css":
-            return "新建CSS文件.css"
-        default:
-            return "新建文件.\(fileExtension)"
         }
     }
 }

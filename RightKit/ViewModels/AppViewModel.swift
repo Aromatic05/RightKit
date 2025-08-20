@@ -59,7 +59,7 @@ class AppViewModel: ObservableObject {
             TemplateInfo(
                 fileName: fileName,
                 displayName: URL(fileURLWithPath: fileName).deletingPathExtension().lastPathComponent,
-                iconName: iconForFileExtension(URL(fileURLWithPath: fileName).pathExtension)
+                iconName: DefaultNameUtils.iconForFileExtension(URL(fileURLWithPath: fileName).pathExtension)
             )
         }
         NSLog("Loaded \(templates.count) templates")
@@ -226,31 +226,6 @@ class AppViewModel: ObservableObject {
     }
     
     // MARK: - Utility Methods
-    
-    private func iconForFileExtension(_ ext: String) -> String {
-        switch ext.lowercased() {
-        case "txt":
-            return "doc.plaintext"
-        case "md":
-            return "text.book.closed"
-        case "swift":
-            return "swift"
-        case "py":
-            return "terminal"
-        case "html", "htm":
-            return "globe"
-        case "css":
-            return "paintbrush"
-        case "js":
-            return "function"
-        case "json":
-            return "braces"
-        case "yaml", "yml":
-            return "doc.text"
-        default:
-            return "doc"
-        }
-    }
     
     func initializeChildren(for item: MenuItem) {
         initializeChildrenRecursive(for: item, in: &menuItems)
