@@ -45,6 +45,14 @@ class ActionHandler {
             cutOrPaste(targetURL: targetURL, selectedItems: selectedItems)
         case "openWithApp":
             openWithApp(appUrl: URL(filePath: parameter), targetURL: selectedItems.first ?? targetURL)
+        case "sendToDesktop":
+            sendToDesktop(targetURL: selectedItems.first ?? targetURL)
+        case "hashFile":
+            calcFileHash(targetURL: selectedItems.first ?? targetURL)
+        case "deleteFile":
+            deleteFiles(selectedItems: selectedItems)
+        case "showHiddenFiles":
+            showHiddenFiles()
         default:
             NSLog("RightKit: Unknown action type: %@", actionType)
         }
@@ -217,6 +225,87 @@ class ActionHandler {
         }
     }
     
+    private func sendToDesktop(targetURL: URL?) {
+        guard let targetURL = targetURL else {
+            NSLog("RightKit: sendToDesktop called with nil targetURL")
+            return
+        }
+        let fileManager = FileManager.default
+        // 获取桌面路径
+        guard let desktopURL = fileManager.urls(for: .desktopDirectory, in: .userDomainMask).first else {
+            NSLog("RightKit: Failed to get Desktop directory")
+            return
+        }
+        // 生成快捷方式名称
+        let shortcutName = targetURL.lastPathComponent + " 别名"
+        var shortcutURL = desktopURL.appendingPathComponent(shortcutName)
+        var counter = 1
+        // 保证名称唯一
+        while fileManager.fileExists(atPath: shortcutURL.path) {
+            let newName = targetURL.deletingPathExtension().lastPathComponent + " 别名" + (counter > 1 ? " " + String(counter) : "")
+            let ext = targetURL.pathExtension
+            let finalName = ext.isEmpty ? newName : newName + "." + ext
+            shortcutURL = desktopURL.appendingPathComponent(finalName)
+            counter += 1
+        }
+        do {
+            try fileManager.createSymbolicLink(at: shortcutURL, withDestinationURL: targetURL)
+            NSLog("RightKit: Successfully created desktop shortcut at %@", shortcutURL.path)
+        } catch {
+            NSLog("RightKit: Failed to create desktop shortcut: %@", error.localizedDescription)
+        }
+    }
+    
+    private func calcFileHash(targetURL: URL?) {
+        guard let url = targetURL else {
+            NSLog("RightKit: calcFileHash called with nil targetURL")
+            return
+        }
+        DispatchQueue.main.async {
+            let dialog = FileHashDialog(fileURL: url)
+            dialog.showModal()
+        }
+    }
+    
+    private func deleteFiles(selectedItems: [URL]) {
+        guard !selectedItems.isEmpty else {
+            NSLog("RightKit: deleteFiles called with empty selection")
+            return
+        }
+        DispatchQueue.main.async {
+            let alert = NSAlert()
+            alert.messageText = "确认永久删除?"
+            alert.informativeText = "此操作无法撤销，将永久删除所选文件。"
+            alert.alertStyle = .warning
+            alert.addButton(withTitle: "删除")
+            alert.addButton(withTitle: "取消")
+            let response = alert.runModal()
+            if response == .alertFirstButtonReturn {
+                let fileManager = FileManager.default
+                for url in selectedItems {
+                    do {
+                        try fileManager.removeItem(at: url)
+                        NSLog("RightKit: Permanently deleted %@", url.path)
+                    } catch {
+                        NSLog("RightKit: Failed to delete %@: %@", url.path, error.localizedDescription)
+                    }
+                }
+            } else {
+                NSLog("RightKit: User cancelled permanent delete")
+            }
+        }
+    }
+    
+    private func showHiddenFiles() {
+        // 切换隐藏文件显示状态
+        let defaults = UserDefaults.standard
+        let currentState = defaults.bool(forKey: "AppleShowAllFiles")
+        let newState = !currentState
+        
+        // 更新用户默认设置
+        defaults.set(newState, forKey: "AppleShowAllFiles")
+    }
+    
     private func copyFilePath(targetURL: URL?, selectedItems: [URL]) {
         var pathsToCopy: [String] = []
         
@@ -246,8 +335,24 @@ class ActionHandler {
         NSLog("RightKit: Successfully copied %d path(s) to clipboard", pathsToCopy.count)
     }
     
-    // MARK: - Helper Methods
+    // MARK: - Cut / Paste
+    /// 切换剪切/粘贴：有待粘贴则执行粘贴，否则开始剪切
+    private func cutOrPaste(targetURL: URL?, selectedItems: [URL]) {
+        CutPasteState.shared.cutOrPaste(targetURL: targetURL, selectedItems: selectedItems)
+    }
     
+    /// 激活文件/文件夹的重命名功能 - 使用有效的方法
+    private func activateFileRename(for fileURL: URL) {
+        NSLog("RightKit: Attempting to activate rename for: %@", fileURL.path)
+        
+        // 使用有效的方法：直接在目标目录中选中文件
+        DispatchQueue.main.async {
+            let targetDirectory = fileURL.deletingLastPathComponent()
+            NSWorkspace.shared.selectFile(fileURL.path, inFileViewerRootedAtPath: targetDirectory.path)
+        }
+    }
+    
+    // MARK: - Helper Methods
     /// 生成唯一的文件URL，处理重复文件名
     private func generateUniqueFileURL(baseName: String, in directory: URL) -> URL {
         let fileManager = FileManager.default
@@ -278,22 +383,5 @@ class ActionHandler {
         } while fileManager.fileExists(atPath: uniqueURL.path)
         
         return uniqueURL
-    }
-    
-    // MARK: - Cut / Paste
-    /// 切换剪切/粘贴：有待粘贴则执行粘贴，否则开始剪切
-    private func cutOrPaste(targetURL: URL?, selectedItems: [URL]) {
-        CutPasteState.shared.cutOrPaste(targetURL: targetURL, selectedItems: selectedItems)
-    }
-    
-    /// 激活文件/文件夹的重命名功能 - 使用有效的方法
-    private func activateFileRename(for fileURL: URL) {
-        NSLog("RightKit: Attempting to activate rename for: %@", fileURL.path)
-        
-        // 使用有效的方法：直接在目标目录中选中文件
-        DispatchQueue.main.async {
-            let targetDirectory = fileURL.deletingLastPathComponent()
-            NSWorkspace.shared.selectFile(fileURL.path, inFileViewerRootedAtPath: targetDirectory.path)
-        }
     }
 }

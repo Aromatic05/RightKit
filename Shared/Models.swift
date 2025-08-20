@@ -33,6 +33,10 @@ enum ActionType: String, Codable {
     case cutFile
     case runShellScript
     case openWithApp        // 添加打开应用动作
+    case sendToDesktop      // 添加发送到桌面动作
+    case hashFile           // 添加计算文件哈希值动作
+    case deleteFile         // 添加删除文件动作
+    case showHiddenFiles    // 添加显示隐藏文件动作
     case separator          // 添加分隔线动作
 }
 

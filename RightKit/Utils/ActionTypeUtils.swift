@@ -14,6 +14,10 @@ struct ActionTypeUtils {
             case .cutFile: return "剪切文件"
             case .runShellScript: return "运行脚本"
             case .openWithApp: return "用...打开"
+            case .sendToDesktop: return "发送到桌面"
+            case .hashFile: return "计算哈希值"
+            case .deleteFile: return "删除文件"
+            case .showHiddenFiles: return "显示隐藏文件"
             case .separator: return "分隔线"
             }
         } else {
@@ -30,6 +34,10 @@ struct ActionTypeUtils {
         case .cutFile: return "scissors"
         case .runShellScript: return "play"
         case .openWithApp: return "app"
+        case .sendToDesktop: return "desktopcomputer"
+        case .hashFile: return "hash"
+        case .deleteFile: return "trash"
+        case .showHiddenFiles: return "eye.slash"
         case .separator: return "minus"
         }
     }

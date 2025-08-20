@@ -193,6 +193,14 @@ struct MenuItemTreeView: View {
                 return .yellow
             case .runShellScript:
                 return .purple
+            case .sendToDesktop:
+                return .cyan
+            case .hashFile:
+                return .pink
+            case .deleteFile:
+                return .red
+            case .showHiddenFiles:
+                return .gray
             }
         }
         

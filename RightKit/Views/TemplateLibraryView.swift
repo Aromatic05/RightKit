@@ -32,6 +32,10 @@ struct TemplateLibraryView: View {
             .runShellScript,
             .openWithApp,
             .separator,
+            .sendToDesktop,
+            .hashFile,
+            .deleteFile,
+            .showHiddenFiles,
             nil // nil 表示"子菜单"
         ]
     }
