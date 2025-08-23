@@ -15,6 +15,14 @@ struct MenuItem: Codable, Equatable, Identifiable {
     var icon: String?         // 图标名称 (SF Symbols 或内置资源)
     var action: Action?       // 关联的动作
     var children: [MenuItem]? // 子菜单
+    var displayCondition: DisplayCondition? = .all // 显示情况, 可为 all, file, folder, 默认为 all
+}
+
+/// 显示情况枚举
+enum DisplayCondition: String, Codable, Equatable {
+    case all
+    case file
+    case folder
 }
 
 /// 动作数据模型
@@ -64,7 +72,7 @@ struct TemplateInfo: Codable, Identifiable, Equatable, Transferable, Hashable {
 
 // MARK: - UI Extensions
 
-extension MenuItem {    
+extension MenuItem {
     /// 判断是否为分隔线
     var isSeparator: Bool {
         return action?.type == .separator
