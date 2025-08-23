@@ -85,7 +85,24 @@ class FinderSync: FIFinderSync {
     }
     
     override func menu(for menuKind: FIMenuKind) -> NSMenu {
-        return MenuBuilder.shared.buildMenu(for: menuKind)
+        let selectedItems = FIFinderSyncController.default().selectedItemURLs() ?? []
+        let isMultiSelection = selectedItems.count > 1
+        var contextType: DisplayCondition = .all
+        if isMultiSelection {
+            contextType = .all
+        } else if selectedItems.count == 1 {
+            let url = selectedItems[0]
+            var isDir: ObjCBool = false
+            if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir) {
+                contextType = isDir.boolValue ? .folder : .file
+            } else {
+                contextType = .file // fallback
+            }
+        } else {
+            // 右键背景
+            contextType = .folder
+        }
+        return MenuBuilder.shared.buildMenu(contextType: contextType, isMultiSelection: isMultiSelection)
     }
     
     @IBAction func menuItemClicked(_ sender: AnyObject?) {

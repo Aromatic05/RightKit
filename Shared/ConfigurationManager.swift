@@ -163,6 +163,7 @@ class ConfigurationManager {
                     name: "计算文件哈希值",
                     icon: "number",
                     action: Action(type: .hashFile, parameter: nil),
+                    displayCondition: .file,
                     children: nil
                 ),
                 MenuItem(

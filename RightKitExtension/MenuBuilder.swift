@@ -41,9 +41,9 @@ class MenuBuilder {
     }
     
     // MARK: - Menu Building
-    
-    func buildMenu(for menuKind: FIMenuKind) -> NSMenu {
-        NSLog("RightKit: Building menu for menuKind: %d", menuKind.rawValue)
+
+    func buildMenu(contextType: DisplayCondition, isMultiSelection: Bool = false) -> NSMenu {
+        NSLog("RightKit: Building menu for contextType: %@, isMultiSelection: %@", String(describing: contextType), String(describing: isMultiSelection))
         
         loadConfigurationIfNeeded()
         
@@ -51,12 +51,14 @@ class MenuBuilder {
         titleToActionMap.removeAll()
         
         for menuItem in cachedMenuItems {
-            let nsMenuItem = buildMenuItem(from: menuItem)
-            menu.addItem(nsMenuItem)
+            if shouldDisplay(menuItem, for: contextType, isMultiSelection: isMultiSelection) {
+                let nsMenuItem = buildMenuItem(from: menuItem, contextType: contextType, isMultiSelection: isMultiSelection)
+                menu.addItem(nsMenuItem)
+            }
         }
         
         // 如果没有菜单项，显示提示
-        if cachedMenuItems.isEmpty {
+        if menu.items.isEmpty {
             let emptyItem = NSMenuItem(title: "请在RightKit应用中配置菜单", action: nil, keyEquivalent: "")
             emptyItem.isEnabled = false
             menu.addItem(emptyItem)
@@ -65,23 +67,16 @@ class MenuBuilder {
         return menu
     }
     
-    func buildToolbarMenu() -> NSMenu {
-        NSLog("RightKit: Building toolbar menu")
-        
-        let menu = NSMenu(title: "RightKit")
-        
-        let configItem = NSMenuItem(title: "打开RightKit配置", action: #selector(FinderSync.openConfigApp(_:)), keyEquivalent: "")
-        menu.addItem(configItem)
-        
-        menu.addItem(NSMenuItem.separator())
-        
-        let aboutItem = NSMenuItem(title: "关于RightKit", action: #selector(FinderSync.showAbout(_:)), keyEquivalent: "")
-        menu.addItem(aboutItem)
-        
-        return menu
+    /// 判断菜单项是否应显示
+    private func shouldDisplay(_ menuItem: MenuItem, for contextType: DisplayCondition, isMultiSelection: Bool) -> Bool {
+        let condition = menuItem.displayCondition ?? .all
+        if isMultiSelection {
+            return condition == .all
+        }
+        return condition == .all || condition == contextType
     }
     
-    private func buildMenuItem(from menuItem: MenuItem) -> NSMenuItem {
+    private func buildMenuItem(from menuItem: MenuItem, contextType: DisplayCondition, isMultiSelection: Bool) -> NSMenuItem {
         // 使用扩展提供的动态标题
         let displayedTitle = menuItem.displayTitle
         
@@ -104,8 +99,10 @@ class MenuBuilder {
         if let children = menuItem.children, !children.isEmpty {
             let submenu = NSMenu(title: displayedTitle)
             for childItem in children {
-                let childNSMenuItem = buildMenuItem(from: childItem)
-                submenu.addItem(childNSMenuItem)
+                if shouldDisplay(childItem, for: contextType, isMultiSelection: isMultiSelection) {
+                    let childNSMenuItem = buildMenuItem(from: childItem, contextType: contextType, isMultiSelection: isMultiSelection)
+                    submenu.addItem(childNSMenuItem)
+                }
             }
             nsMenuItem.submenu = submenu
         }

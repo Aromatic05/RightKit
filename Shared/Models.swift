@@ -14,8 +14,8 @@ struct MenuItem: Codable, Equatable, Identifiable {
     var name: String          // 菜单项名称
     var icon: String?         // 图标名称 (SF Symbols 或内置资源)
     var action: Action?       // 关联的动作
-    var children: [MenuItem]? // 子菜单
     var displayCondition: DisplayCondition? = .all // 显示情况, 可为 all, file, folder, 默认为 all
+    var children: [MenuItem]? // 子菜单
 }
 
 /// 显示情况枚举

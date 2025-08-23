@@ -13,6 +13,7 @@ struct MenuItemDetailEditor: View {
     @State private var editedName: String = ""
     @State private var editedIcon: String = ""
     @State private var editedParameter: String = ""
+    @State private var editedDisplayCondition: DisplayCondition = .all
 
     private var item: MenuItem? {
         findMenuItem(by: itemId, in: viewModel.menuItems)
@@ -30,7 +31,8 @@ struct MenuItemDetailEditor: View {
         guard let item = item else { return false }
         return editedName != item.name ||
         editedIcon != (item.icon ?? "") ||
-        editedParameter != (item.action?.parameter ?? "")
+        editedParameter != (item.action?.parameter ?? "") ||
+        editedDisplayCondition != (item.displayCondition ?? .all)
     }
     private func validIcon(_ icon: String?) -> String {
         let icons = DefaultNameUtils.availableIcons
@@ -139,6 +141,18 @@ struct MenuItemDetailEditor: View {
                         .background(.secondary.opacity(0.1))
                         .cornerRadius(6)
                 }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("显示情况")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Picker("显示情况", selection: $editedDisplayCondition) {
+                        Text("全部").tag(DisplayCondition.all)
+                        Text("仅文件").tag(DisplayCondition.file)
+                        Text("仅文件夹").tag(DisplayCondition.folder)
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(maxWidth: 250)
+                }
                 HStack {
                     Spacer()
                     Button("保存") {
@@ -150,6 +164,9 @@ struct MenuItemDetailEditor: View {
                         }
                         if let action = item.action, ActionTypeUtils.shouldShowParameterEditor(for: action.type), editedParameter != (action.parameter ?? "") {
                             viewModel.updateMenuItem(item, parameter: editedParameter)
+                        }
+                        if editedDisplayCondition != (item.displayCondition ?? .all) {
+                            viewModel.updateMenuItem(item, displayCondition: editedDisplayCondition)
                         }
                     }
                     .disabled(!hasChanges)
@@ -165,6 +182,7 @@ struct MenuItemDetailEditor: View {
                 editedName = item.name
                 editedIcon = validIcon(item.icon)
                 editedParameter = item.action?.parameter ?? ""
+                editedDisplayCondition = item.displayCondition ?? .all
             }
         }
         .onChange(of: itemId) { newId, _ in
@@ -172,6 +190,7 @@ struct MenuItemDetailEditor: View {
                 editedName = item.name
                 editedIcon = validIcon(item.icon)
                 editedParameter = item.action?.parameter ?? ""
+                editedDisplayCondition = item.displayCondition ?? .all
             }
         }
         .onChange(of: item) { newItem, _ in
@@ -179,6 +198,7 @@ struct MenuItemDetailEditor: View {
                 editedName = item.name
                 editedIcon = validIcon(item.icon)
                 editedParameter = item.action?.parameter ?? ""
+                editedDisplayCondition = item.displayCondition ?? .all
             }
         }
     }
