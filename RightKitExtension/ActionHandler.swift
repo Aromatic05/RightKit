@@ -261,10 +261,28 @@ class ActionHandler {
             NSLog("RightKit: calcFileHash called with nil targetURL")
             return
         }
-//        DispatchQueue.main.async {
-//            let dialog = FileHashDialog(fileURL: url)
-//            dialog.showModal()
-//        }
+        
+        // 检查文件是否存在
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            NSLog("RightKit: File does not exist: \(url.path)")
+            return
+        }
+        
+        // 构建 URL Scheme 调用 RightKitHelper
+        var components = URLComponents()
+        components.scheme = "hashcalculator-helper"
+        components.host = "calculate-hash"
+        components.queryItems = [URLQueryItem(name: "filePath", value: url.path)]
+        
+        guard let schemeURL = components.url else {
+            NSLog("RightKit: Failed to create URL scheme for hash calculation")
+            return
+        }
+        
+        NSLog("RightKit: Opening hash calculator with URL: \(schemeURL.absoluteString)")
+        
+        // 使用 NSWorkspace 打开 URL Scheme
+        NSWorkspace.shared.open(schemeURL)
     }
     
     private func deleteFiles(selectedItems: [URL]) {

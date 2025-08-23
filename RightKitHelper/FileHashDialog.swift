@@ -1,7 +1,7 @@
 import Cocoa
 import Foundation
 
-class FileHashDialog: NSWindowController {
+class FileHashDialog: NSWindowController, NSWindowDelegate {
     private let fileURL: URL
     private var selectedTypes: Set<FileHashType> = [.md5, .sha1, .sha256]
     private var checkboxes: [NSButton] = []
@@ -14,6 +14,7 @@ class FileHashDialog: NSWindowController {
                               backing: .buffered, defer: false)
         window.title = "文件哈希值计算"
         super.init(window: window)
+        window.delegate = self // 设置窗口代理
         setupUI()
     }
 
@@ -22,7 +23,7 @@ class FileHashDialog: NSWindowController {
     private func setupUI() {
         guard let contentView = window?.contentView else { return }
         let label = NSTextField(labelWithString: "请选择要计算的哈希类型：")
-        label.frame = NSRect(x: 20, y: 270, width: 360, height: 24)
+        label.frame = NSRect(x: 20, y: 270, width: 560, height: 48)
         contentView.addSubview(label)
 
         var y = 240
@@ -65,5 +66,9 @@ class FileHashDialog: NSWindowController {
         guard let window = self.window else { return }
         let app = NSApplication.shared
         app.runModal(for: window)
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        NSApp.terminate(nil) // 窗口关闭时立即退出进程
     }
 }
