@@ -8,13 +8,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func handleURLScheme(_ url: URL) {
-        guard url.scheme == "hashcalculator-helper" else {
+        guard url.scheme == "rightkit-helper" else {
             NSLog("RightKitHelper: Unknown URL scheme: \(url.scheme ?? "nil")")
             return
         }
         switch url.host {
         case "calculate-hash":
             handleHashCalculation(url)
+        case "delete-file":
+            handleDeleteFile(url)
         default:
             NSLog("RightKitHelper: Unknown URL host: \(url.host ?? "nil")")
         }
@@ -37,6 +39,44 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         DispatchQueue.main.async {
             let dialog = FileHashDialog(fileURL: fileURL)
             dialog.showModal()
+        }
+    }
+
+    private func handleDeleteFile(_ url: URL) {
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              let queryItems = components.queryItems else {
+            NSLog("RightKitHelper: Invalid delete file URL - missing query items")
+            return
+        }
+        let filePaths = queryItems.filter { $0.name == "filePath" }.compactMap { $0.value }
+        let urls = filePaths.map { URL(fileURLWithPath: $0) }.filter { FileManager.default.fileExists(atPath: $0.path) }
+        guard !urls.isEmpty else {
+            NSLog("RightKitHelper: No valid files to delete")
+            return
+        }
+        NSLog("RightKitHelper: Showing system delete confirmation for files: \(urls.map { $0.path })")
+        DispatchQueue.main.async {
+            let alert = NSAlert()
+            alert.messageText = "确认永久删除?"
+            alert.informativeText = "此操作无法撤销，将永久删除所选文件。"
+            alert.alertStyle = .warning
+            alert.addButton(withTitle: "删除")
+            alert.addButton(withTitle: "取消")
+            let response = alert.runModal()
+            if response == .alertFirstButtonReturn {
+                let fileManager = FileManager.default
+                for url in urls {
+                    do {
+                        try fileManager.removeItem(at: url)
+                        NSLog("RightKitHelper: Permanently deleted %@", url.path)
+                    } catch {
+                        NSLog("RightKitHelper: Failed to delete %@: %@", url.path, error.localizedDescription)
+                    }
+                }
+            } else {
+                NSLog("RightKitHelper: User cancelled permanent delete")
+            }
+            NSApp.terminate(nil)
         }
     }
 }

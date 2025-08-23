@@ -270,7 +270,7 @@ class ActionHandler {
         
         // 构建 URL Scheme 调用 RightKitHelper
         var components = URLComponents()
-        components.scheme = "hashcalculator-helper"
+        components.scheme = "rightkit-helper"
         components.host = "calculate-hash"
         components.queryItems = [URLQueryItem(name: "filePath", value: url.path)]
         
@@ -290,28 +290,16 @@ class ActionHandler {
             NSLog("RightKit: deleteFiles called with empty selection")
             return
         }
-//        DispatchQueue.main.async {
-//            let alert = NSAlert()
-//            alert.messageText = "确认永久删除?"
-//            alert.informativeText = "此操作无法撤销，将永久删除所选文件。"
-//            alert.alertStyle = .warning
-//            alert.addButton(withTitle: "删除")
-//            alert.addButton(withTitle: "取消")
-//            let response = alert.runModal()
-//            if response == .alertFirstButtonReturn {
-//                let fileManager = FileManager.default
-//                for url in selectedItems {
-//                    do {
-//                        try fileManager.removeItem(at: url)
-//                        NSLog("RightKit: Permanently deleted %@", url.path)
-//                    } catch {
-//                        NSLog("RightKit: Failed to delete %@: %@", url.path, error.localizedDescription)
-//                    }
-//                }
-//            } else {
-//                NSLog("RightKit: User cancelled permanent delete")
-//            }
-//        }
+        var components = URLComponents()
+        components.scheme = "rightkit-helper"
+        components.host = "delete-file"
+        components.queryItems = selectedItems.map { URLQueryItem(name: "filePath", value: $0.path) }
+        guard let schemeURL = components.url else {
+            NSLog("RightKit: Failed to create URL scheme for delete file")
+            return
+        }
+        NSLog("RightKit: Opening delete file dialog with URL: \(schemeURL.absoluteString)")
+        NSWorkspace.shared.open(schemeURL)
     }
     
     private func showHiddenFiles() {
