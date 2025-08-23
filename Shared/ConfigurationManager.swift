@@ -135,14 +135,6 @@ class ConfigurationManager {
             ]
         )
         
-        // 添加新建文件夹菜单项
-        let newFolderMenu = MenuItem(
-            name: "新建文件夹",
-            icon: "folder.badge.plus",
-            action: Action(type: .createFolder, parameter: "新建文件夹"),
-            children: nil
-        )
-        
         // 添加其他工具菜单项
         let toolsMenu = MenuItem(
             name: "工具",
@@ -166,11 +158,23 @@ class ConfigurationManager {
                     icon: "scissors",
                     action: Action(type: .cutFile, parameter: nil),
                     children: nil
+                ),
+                MenuItem(
+                    name: "计算文件哈希值",
+                    icon: "number",
+                    action: Action(type: .hashFile, parameter: nil),
+                    children: nil
+                ),
+                MenuItem(
+                    name: "发送到桌面",
+                    icon: "desktopcomputer",
+                    action: Action(type: .sendToDesktop, parameter: nil),
+                    children: nil
                 )
             ]
         )
         
-        return MenuConfiguration(items: [newFileMenu, newFolderMenu, toolsMenu])
+        return MenuConfiguration(items: [newFileMenu, toolsMenu])
     }
     
     /// 保存配置到App Group容器

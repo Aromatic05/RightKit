@@ -200,11 +200,17 @@ class ActionHandler {
     }
     
     private func runShellScript(scriptPath: String, at targetURL: URL?) {
-        var target = targetURL ?? URL(fileURLWithPath: NSHomeDirectory())
+        // 步骤 1: 准备路径和临时文件位置
+        let finalTargetURL = targetURL ?? URL(fileURLWithPath: NSHomeDirectory())
         let process = Process()
-        process.launchPath = "/usr/bin/open"
-        process.arguments = ["-a", "Terminal", scriptPath]
-        process.launch()
+        do {
+            process.launchPath = "/usr/bin/open"
+            process.arguments = ["-a", "Terminal", finalTargetURL.path]
+            
+            try process.run()
+        } catch {
+            NSLog("RightKit: Failed to run shell script at %@: %@", finalTargetURL.path, error.localizedDescription)
+        }
     }
     
     private func openWithApp(appUrl: URL, targetURL: URL?) {

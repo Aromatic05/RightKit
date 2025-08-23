@@ -29,13 +29,13 @@ struct TemplateLibraryView: View {
             .openTerminal,
             .copyFilePath,
             .cutFile,
-            .runShellScript,
+//            .runShellScript,
             .openWithApp,
             .separator,
             .sendToDesktop,
             .hashFile,
             .deleteFile,
-            .showHiddenFiles,
+//            .showHiddenFiles,
             nil // nil 表示"子菜单"
         ]
     }
