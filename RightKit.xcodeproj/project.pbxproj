@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		2878AE8A2E4F386C009E9207 /* RightKitExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 2878AE822E4F386C009E9207 /* RightKitExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		2878AE932E4F3A98009E9207 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 2878AE922E4F3A98009E9207 /* README.md */; };
+		288690282E5A9D25004B1C9D /* RightKitHelper.app in CopyFiles */ = {isa = PBXBuildFile; fileRef = 283F9BAE2E598C2F00BE1C35 /* RightKitHelper.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -18,6 +19,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 2878AE812E4F386C009E9207;
 			remoteInfo = RightKitExtension;
+		};
+		287DCC3E2E5A998100B120C7 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2878AE672E4F3824009E9207 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 283F9BAD2E598C2F00BE1C35;
+			remoteInfo = RightKitHelper;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -41,6 +49,16 @@
 				2878AE8A2E4F386C009E9207 /* RightKitExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		288690272E5A9D1B004B1C9D /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Contents/Helpers;
+			dstSubfolderSpec = 1;
+			files = (
+				288690282E5A9D25004B1C9D /* RightKitHelper.app in CopyFiles */,
+			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -192,10 +210,12 @@
 				2878AE6D2E4F3824009E9207 /* Resources */,
 				2878AE8F2E4F386C009E9207 /* Embed Foundation Extensions */,
 				283F9B852E5988D200BE1C35 /* Embed XPC Services */,
+				288690272E5A9D1B004B1C9D /* CopyFiles */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				287DCC3F2E5A998100B120C7 /* PBXTargetDependency */,
 				2878AE892E4F386C009E9207 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
@@ -327,6 +347,11 @@
 			isa = PBXTargetDependency;
 			target = 2878AE812E4F386C009E9207 /* RightKitExtension */;
 			targetProxy = 2878AE882E4F386C009E9207 /* PBXContainerItemProxy */;
+		};
+		287DCC3F2E5A998100B120C7 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 283F9BAD2E598C2F00BE1C35 /* RightKitHelper */;
+			targetProxy = 287DCC3E2E5A998100B120C7 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 

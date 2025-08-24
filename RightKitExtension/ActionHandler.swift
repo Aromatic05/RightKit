@@ -262,33 +262,52 @@ class ActionHandler {
         }
     }
     
+    /// 检查指定 URL Scheme 是否已注册，如果没有则手动启动 helper app
+    private func ensureHelperAppForScheme(scheme: String, fileURL: URL) -> Bool {
+        // 构造一个测试 URL
+        guard let testURL = URL(string: "\(scheme)://test") else { return false }
+        // 检查是否有 app 能打开该 scheme
+        let appURL = NSWorkspace.shared.urlForApplication(toOpen: testURL)
+        if appURL != nil {
+            // 已注册
+            return true
+        } else {
+            // 未注册，手动启动 helper app
+            let helperAppPath = Bundle.main.bundlePath + "/Contents/Helpers/RightKitHelper.app"
+            let configuration = NSWorkspace.OpenConfiguration()
+            configuration.arguments = ["--calculate-hash", fileURL.path]
+            NSWorkspace.shared.openApplication(at: URL(fileURLWithPath: helperAppPath), configuration: configuration, completionHandler: nil)
+            return false
+        }
+    }
+    
     private func calcFileHash(targetURL: URL?) {
         guard let url = targetURL else {
             NSLog("RightKit: calcFileHash called with nil targetURL")
             return
         }
-        
         // 检查文件是否存在
         guard FileManager.default.fileExists(atPath: url.path) else {
             NSLog("RightKit: File does not exist: \(url.path)")
             return
         }
-        
-        // 构建 URL Scheme 调用 RightKitHelper
-        var components = URLComponents()
-        components.scheme = "rightkit-helper"
-        components.host = "calculate-hash"
-        components.queryItems = [URLQueryItem(name: "filePath", value: url.path)]
-        
-        guard let schemeURL = components.url else {
-            NSLog("RightKit: Failed to create URL scheme for hash calculation")
-            return
+        // 检查 scheme 是否已注册，否则直接启动 helper app
+        let scheme = "rightkit-helper"
+        if ensureHelperAppForScheme(scheme: scheme, fileURL: url) {
+            // 构建 URL Scheme 调用 RightKitHelper
+            var components = URLComponents()
+            components.scheme = scheme
+            components.host = "calculate-hash"
+            components.queryItems = [URLQueryItem(name: "filePath", value: url.path)]
+            guard let schemeURL = components.url else {
+                NSLog("RightKit: Failed to create URL scheme for hash calculation")
+                return
+            }
+            NSLog("RightKit: Opening hash calculator with URL: \(schemeURL.absoluteString)")
+            NSWorkspace.shared.open(schemeURL)
+        } else {
+            NSLog("RightKit: Helper app not registered for scheme, launched manually.")
         }
-        
-        NSLog("RightKit: Opening hash calculator with URL: \(schemeURL.absoluteString)")
-        
-        // 使用 NSWorkspace 打开 URL Scheme
-        NSWorkspace.shared.open(schemeURL)
     }
     
     private func deleteFiles(selectedItems: [URL]) {
@@ -296,16 +315,26 @@ class ActionHandler {
             NSLog("RightKit: deleteFiles called with empty selection")
             return
         }
-        var components = URLComponents()
-        components.scheme = "rightkit-helper"
-        components.host = "delete-file"
-        components.queryItems = selectedItems.map { URLQueryItem(name: "filePath", value: $0.path) }
-        guard let schemeURL = components.url else {
-            NSLog("RightKit: Failed to create URL scheme for delete file")
-            return
+        let scheme = "rightkit-helper"
+        // 检查 scheme 是否已注册，否则直接启动 helper app
+        if ensureHelperAppForScheme(scheme: scheme, fileURL: selectedItems[0]) {
+            var components = URLComponents()
+            components.scheme = scheme
+            components.host = "delete-file"
+            components.queryItems = selectedItems.map { URLQueryItem(name: "filePath", value: $0.path) }
+            guard let schemeURL = components.url else {
+                NSLog("RightKit: Failed to create URL scheme for delete file")
+                return
+            }
+            NSLog("RightKit: Opening delete file dialog with URL: \(schemeURL.absoluteString)")
+            NSWorkspace.shared.open(schemeURL)
+        } else {
+            NSLog("RightKit: Helper app not registered for scheme, launched manually.")
+            let helperAppPath = Bundle.main.bundlePath + "/Contents/Helpers/RightKitHelper.app"
+            let configuration = NSWorkspace.OpenConfiguration()
+            configuration.arguments = ["--delete-file"] + selectedItems.map { $0.path }
+            NSWorkspace.shared.openApplication(at: URL(fileURLWithPath: helperAppPath), configuration: configuration, completionHandler: nil)
         }
-        NSLog("RightKit: Opening delete file dialog with URL: \(schemeURL.absoluteString)")
-        NSWorkspace.shared.open(schemeURL)
     }
     
     private func showHiddenFiles() {
