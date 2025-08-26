@@ -54,152 +54,157 @@ struct MenuItemDetailEditor: View {
         )
     }
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("编辑菜单项")
-                .font(.headline)
-            if let item = item {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("显示名称")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    TextField("菜单项名称", text: $editedName)
-                        .id(itemId)
-                        .textFieldStyle(.roundedBorder)
-                        .onSubmit {
-                            if !editedName.isEmpty {
-                                viewModel.updateMenuItem(item, name: editedName)
-                            }
-                        }
-                }
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("图标 (SF Symbols)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    HStack {
-                        Picker(selection: iconBinding, label: Text("选择图标")) {
-                            ForEach(DefaultNameUtils.availableIcons, id: \.self) { iconName in
-                                HStack {
-                                    Image(systemName: iconName)
-                                        .frame(width: 20)
-                                    Text(iconName)
-                                }
-                                .tag(iconName)
-                            }
-                        }
-                        .frame(maxWidth: 200)
-                        if !editedIcon.isEmpty {
-                            Image(systemName: editedIcon)
-                                .foregroundColor(.accentColor)
-                                .frame(width: 20)
-                        }
-                        Button {
-                            if let actionType = item.action?.type {
-                                editedIcon = DefaultNameUtils.suggestIcon(for: editedParameter, actionType: actionType)
-                            }
-                        } label: {
-                            Image(systemName: "wand.and.stars")
-                        }
-                        .buttonStyle(.borderless)
-                        .help("根据内容生成图标")
-                    }
-                }
-                if let action = item.action, ActionTypeUtils.shouldShowParameterEditor(for: action.type) {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("编辑菜单项")
+                    .font(.headline)
+                if let item = item {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(ActionTypeUtils.parameterLabel(for: action.type))
+                        Text("显示名称")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        TextField("菜单项名称", text: $editedName)
+                            .id(itemId)
+                            .textFieldStyle(.roundedBorder)
+                            .onSubmit {
+                                if !editedName.isEmpty {
+                                    viewModel.updateMenuItem(item, name: editedName)
+                            }
+                            }
+                    }
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("图标 (SF Symbols)")
                             .font(.caption)
                             .foregroundColor(.secondary)
                         HStack {
-                            TextField(ActionTypeUtils.parameterPlaceholder(for: action.type), text: $editedParameter)
-                                .textFieldStyle(.roundedBorder)
-                            if ActionTypeUtils.shouldShowFilePicker(for: action.type) {
-                                Button {
-                                    let panel = NSOpenPanel()
-                                    panel.canChooseFiles = true
-                                    panel.canChooseDirectories = false
-                                    panel.allowsMultipleSelection = false
-                                    panel.allowedContentTypes = ActionTypeUtils.allowedContentTypes(for: action.type)
-                                    if panel.runModal() == .OK, let url = panel.url {
-                                        editedParameter = url.path
+                            Picker(selection: iconBinding, label: Text("选择图标")) {
+                                ForEach(DefaultNameUtils.availableIcons, id: \.self) { iconName in
+                                    HStack {
+                                        Image(systemName: iconName)
+                                            .frame(width: 20)
+                                        Text(iconName)
                                     }
-                                } label: {
-                                    Image(systemName: "folder")
+                                    .tag(iconName)
                                 }
-                                .buttonStyle(.borderless)
-                                .help("选择文件")
+                            }
+                            .frame(maxWidth: 200)
+                            if !editedIcon.isEmpty {
+                                Image(systemName: editedIcon)
+                                    .foregroundColor(.accentColor)
+                                    .frame(width: 20)
+                            }
+                            Button {
+                                if let actionType = item.action?.type {
+                                    editedIcon = DefaultNameUtils.suggestIcon(for: editedParameter, actionType: actionType)
+                            }
+                            } label: {
+                                Image(systemName: "wand.and.stars")
+                            }
+                            .buttonStyle(.borderless)
+                            .help("根据内容生成图标")
+                        }
+                    }
+                    if let action = item.action, ActionTypeUtils.shouldShowParameterEditor(for: action.type) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(ActionTypeUtils.parameterLabel(for: action.type))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            HStack {
+                                TextField(ActionTypeUtils.parameterPlaceholder(for: action.type), text: $editedParameter)
+                                    .textFieldStyle(.roundedBorder)
+                                if ActionTypeUtils.shouldShowFilePicker(for: action.type) {
+                                    Button {
+                                        let panel = NSOpenPanel()
+                                        panel.canChooseFiles = true
+                                        panel.canChooseDirectories = false
+                                        panel.allowsMultipleSelection = false
+                                        panel.allowedContentTypes = ActionTypeUtils.allowedContentTypes(for: action.type)
+                                        if panel.runModal() == .OK, let url = panel.url {
+                                            editedParameter = url.path
+                                        }
+                                    } label: {
+                                        Image(systemName: "folder")
+                                    }
+                                    .buttonStyle(.borderless)
+                                    .help("选择文件")
+                                }
                             }
                         }
                     }
-                }
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("类型")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Text(ActionTypeUtils.displayName(for: item.action?.type))
-                        .font(.body)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(.secondary.opacity(0.1))
-                        .cornerRadius(6)
-                }
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("显示情况")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Picker("显示情况", selection: $editedDisplayCondition) {
-                        Text("全部").tag(DisplayCondition.all)
-                        Text("仅文件").tag(DisplayCondition.file)
-                        Text("仅文件夹").tag(DisplayCondition.folder)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("类型")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text(ActionTypeUtils.displayName(for: item.action?.type))
+                            .font(.body)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(.secondary.opacity(0.1))
+                            .cornerRadius(6)
                     }
-                    .pickerStyle(.segmented)
-                    .frame(maxWidth: 250)
-                }
-                HStack {
-                    Spacer()
-                    Button("保存") {
-                        if editedName != item.name && !editedName.isEmpty {
-                            viewModel.updateMenuItem(item, name: editedName)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("显示情况")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Picker("显示情况", selection: $editedDisplayCondition) {
+                            Text("全部").tag(DisplayCondition.all)
+                            Text("仅文件").tag(DisplayCondition.file)
+                            Text("仅文件夹").tag(DisplayCondition.folder)
                         }
-                        if editedIcon != (item.icon ?? "") {
-                            viewModel.updateMenuItem(item, icon: editedIcon.isEmpty ? nil : editedIcon)
-                        }
-                        if let action = item.action, ActionTypeUtils.shouldShowParameterEditor(for: action.type), editedParameter != (action.parameter ?? "") {
-                            viewModel.updateMenuItem(item, parameter: editedParameter)
-                        }
-                        if editedDisplayCondition != (item.displayCondition ?? .all) {
-                            viewModel.updateMenuItem(item, displayCondition: editedDisplayCondition)
-                        }
+                        .pickerStyle(.segmented)
+                        .frame(maxWidth: 250)
                     }
-                    .disabled(!hasChanges)
-                    .buttonStyle(.borderedProminent)
+                    HStack {
+                        Spacer()
+                        Button("保存") {
+                            if editedName != item.name && !editedName.isEmpty {
+                                viewModel.updateMenuItem(item, name: editedName)
+                            }
+                            if editedIcon != (item.icon ?? "") {
+                                viewModel.updateMenuItem(item, icon: editedIcon.isEmpty ? nil : editedIcon)
+                            }
+                            if let action = item.action, ActionTypeUtils.shouldShowParameterEditor(for: action.type), editedParameter != (action.parameter ?? "") {
+                                viewModel.updateMenuItem(item, parameter: editedParameter)
+                            }
+                            if editedDisplayCondition != (item.displayCondition ?? .all) {
+                                viewModel.updateMenuItem(item, displayCondition: editedDisplayCondition)
+                            }
+                        }
+                        .disabled(!hasChanges)
+                        .buttonStyle(.borderedProminent)
+                    }
+                } else {
+                    Text("未找到菜单项")
+                        .foregroundColor(.secondary)
                 }
-            } else {
-                Text("未找到菜单项")
-                    .foregroundColor(.secondary)
+            }
+            .onAppear {
+                if let item = item {
+                    editedName = item.name
+                    editedIcon = validIcon(item.icon)
+                    editedParameter = item.action?.parameter ?? ""
+                    editedDisplayCondition = item.displayCondition ?? .all
+                }
+            }
+            .onChange(of: itemId) { newId, _ in
+                if let item = self.item {
+                    editedName = item.name
+                    editedIcon = validIcon(item.icon)
+                    editedParameter = item.action?.parameter ?? ""
+                    editedDisplayCondition = item.displayCondition ?? .all
+                }
+            }
+            .onChange(of: item) { newItem, _ in
+                if let item = newItem {
+                    editedName = item.name
+                    editedIcon = validIcon(item.icon)
+                    editedParameter = item.action?.parameter ?? ""
+                    editedDisplayCondition = item.displayCondition ?? .all
+                }
             }
         }
-        .onAppear {
-            if let item = item {
-                editedName = item.name
-                editedIcon = validIcon(item.icon)
-                editedParameter = item.action?.parameter ?? ""
-                editedDisplayCondition = item.displayCondition ?? .all
-            }
-        }
-        .onChange(of: itemId) { newId, _ in
-            if let item = self.item {
-                editedName = item.name
-                editedIcon = validIcon(item.icon)
-                editedParameter = item.action?.parameter ?? ""
-                editedDisplayCondition = item.displayCondition ?? .all
-            }
-        }
-        .onChange(of: item) { newItem, _ in
-            if let item = newItem {
-                editedName = item.name
-                editedIcon = validIcon(item.icon)
-                editedParameter = item.action?.parameter ?? ""
-                editedDisplayCondition = item.displayCondition ?? .all
-            }
-        }
+        .frame(maxWidth: .infinity)
+        .padding()
     }
+    
 }
