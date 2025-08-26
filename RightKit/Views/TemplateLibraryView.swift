@@ -41,256 +41,259 @@ struct TemplateLibraryView: View {
     }
     
     var body: some View {
-        ScrollView {
-            VStack(alignment: .center, spacing: 0) {
-                // 标题栏
-                HStack {
-                    Text("模板与操作库")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                    Spacer()
+        VStack(alignment: .center, spacing: 0) {
+            // 标题栏
+            HStack {
+                Text("模板与操作库")
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                Spacer()
+            }
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(.regularMaterial)
+            Divider()
+                .padding(.top, 0)
+            
+            // 操作库折叠菜单
+            DisclosureGroup(
+                isExpanded: $showActionLibrary,
+                content: {
+                    // (修复第二步): 将 List 的 selection 绑定到本地的 @State 变量
+                    List(allActions.indices, id: \.self, selection: $selectedActionIndex) { idx in
+                        let actionType = allActions[idx]
+                        HStack {
+                            if let type = actionType {
+                                Image(systemName: ActionTypeUtils.icon(for: type))
+                                    .foregroundColor(.accentColor)
+                                Text(ActionTypeUtils.displayName(for: type))
+                            } else {
+                                Image(systemName: "list.bullet")
+                                    .foregroundColor(.accentColor)
+                                Text("子菜单")
+                            }
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .listStyle(.sidebar)
+                    .background(.regularMaterial)
+                    .frame(minWidth: 180, maxWidth: 320, minHeight: 220, maxHeight: 320)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                },
+                label: {
+                    HStack {
+                        Text("操作库")
+                            .font(.title3)
+                            .fontWeight(.medium)
+                            .foregroundColor(.accentColor)
+                        Spacer()
+                        Button(action: {}) {
+                            Image(systemName: "plus")
+                                .foregroundColor(.accentColor)
+                        }
+                        .buttonStyle(.borderless)
+                        .help("添加新操作（暂未实现）")
+                    }
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .padding(.leading, 12)
                 }
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .background(.regularMaterial)
-                Divider()
-                    .padding(.top, 0)
-                
-                // 操作库折叠菜单
-                DisclosureGroup(
-                    isExpanded: $showActionLibrary,
-                    content: {
-                        // (修复第二步): 将 List 的 selection 绑定到本地的 @State 变量
-                        List(allActions.indices, id: \.self, selection: $selectedActionIndex) { idx in
-                            let actionType = allActions[idx]
+            )
+            .padding(.horizontal, 0)
+            .padding(.vertical, 4)
+            .padding(.leading, 12)
+            
+            // 模板库折叠菜单
+            DisclosureGroup(
+                isExpanded: $showTemplateLibrary,
+                content: {
+                    VStack(spacing: 12) {
+                        // 模板目录状态和选择区域
+                        VStack(spacing: 8) {
                             HStack {
-                                if let type = actionType {
-                                    Image(systemName: ActionTypeUtils.icon(for: type))
-                                        .foregroundColor(.accentColor)
-                                    Text(ActionTypeUtils.displayName(for: type))
-                                } else {
-                                    Image(systemName: "list.bullet")
-                                        .foregroundColor(.accentColor)
-                                    Text("子菜单")
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("模板目录")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                    
+                                    if isTemplatefolderConfigured, let path = templateFolderPath {
+                                        Text(path)
+                                            .font(.caption)
+                                            .foregroundColor(.primary)
+                                            .lineLimit(1)
+                                            .truncationMode(.middle)
+                                    } else {
+                                        Text("未选择模板目录")
+                                            .font(.caption)
+                                            .foregroundColor(.orange)
+                                    }
+                                }
+                                
+                                Spacer()
+                                
+                                // 选择/更改目录按钮
+                                Button(action: {
+                                    TemplateManager.selectTemplateFolderForUI { success in
+                                        if success {
+                                            updateTemplateFolderStatus()
+                                        }
+                                    }
+                                }) {
+                                    Text(isTemplatefolderConfigured ? "更改" : "选择")
+                                        .font(.caption)
+                                }
+                                .buttonStyle(.bordered)
+                                .controlSize(.mini)
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+                        }
+                        
+                        // 模板列表或提示
+                        if !isTemplatefolderConfigured {
+                            // 未配置目录的提示
+                            VStack(spacing: 16) {
+                                Image(systemName: "folder.badge.questionmark")
+                                    .font(.system(size: 48))
+                                    .foregroundColor(.secondary)
+                                
+                                VStack(spacing: 8) {
+                                    Text("需要选择模板目录")
+                                        .font(.title2)
+                                        .foregroundColor(.primary)
+                                    
+                                    Text("请先选择一个文件夹作为模板存储位置，然后就可以添加和使用模板文件了。")
+                                        .font(.callout)
+                                        .foregroundColor(.secondary)
+                                        .multilineTextAlignment(.center)
+                                        .padding(.horizontal, 20)
+                                }
+                                
+                                Button(action: {
+                                    TemplateManager.initializeTemplateFolder()
+                                    updateTemplateFolderStatus()
+                                }) {
+                                    Label("选择模板目录", systemImage: "folder.badge.plus")
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .controlSize(.large)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding(.vertical, 32)
+                        } else if viewModel.templates.isEmpty {
+                            // 已配置目录但无模板的提示
+                            VStack(alignment: .center, spacing: 16) {
+                                Image(systemName: "doc.badge.plus")
+                                    .font(.system(size: 48))
+                                    .foregroundColor(.secondary)
+                                Text("暂无模板文件")
+                                    .font(.title2)
+                                    .foregroundColor(.secondary)
+                                VStack(spacing: 4) {
+                                    Text("点击上方 + 按钮添加模板文件")
+                                        .font(.callout)
+                                        .foregroundColor(.secondary)
+                                    Text("或直接将文件拖拽到模板目录中")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary.opacity(0.7))
                                 }
                             }
-                            .contentShape(Rectangle())
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding(.vertical, 32)
+                        } else {
+                            // 模板列表
+                            List(viewModel.templates, id: \.id, selection: $selectedTemplate) { template in
+                                HStack(spacing: 12) {
+                                    Image(systemName: template.iconName ?? "doc")
+                                        .foregroundColor(.accentColor)
+                                        .frame(width: 20)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(template.displayName)
+                                            .font(.system(.body, design: .rounded))
+                                            .foregroundColor(.primary)
+                                        Text(template.fileName)
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    Spacer()
+                                    
+                                    // 删除按钮
+                                    Button(action: {
+                                        templateToDelete = template
+                                        showingDeleteAlert = true
+                                    }) {
+                                        Image(systemName: "trash")
+                                            .foregroundColor(.red)
+                                            .font(.system(size: 14))
+                                    }
+                                    .buttonStyle(.borderless)
+                                    .help("删除模板")
+                                }
+                                .contentShape(Rectangle())
+                            }
+                            .listStyle(.sidebar)
+                            .background(.regularMaterial)
+                            .frame(minWidth: 180, maxWidth: 320, minHeight: 200, maxHeight: 280)
+                            .frame(maxWidth: .infinity, alignment: .center)
                         }
-                        .frame(minWidth: 180, maxWidth: 320, minHeight: 220, maxHeight: 320)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                    },
-                    label: {
-                        HStack {
-                            Text("操作库")
-                                .font(.title3)
-                                .fontWeight(.medium)
-                                .foregroundColor(.accentColor)
-                            Spacer()
-                            Button(action: {}) {
+                    }
+                },
+                label: {
+                    HStack {
+                        Text("模板库")
+                            .font(.title3)
+                            .fontWeight(.medium)
+                            .foregroundColor(.accentColor)
+                        Spacer()
+                        
+                        // 只有在配置了目录时才显示添加按钮
+                        if isTemplatefolderConfigured {
+                            Button(action: { showingFilePicker = true }) {
                                 Image(systemName: "plus")
                                     .foregroundColor(.accentColor)
                             }
                             .buttonStyle(.borderless)
-                            .help("添加新操作（暂未实现）")
-                        }
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .padding(.leading, 12)
-                    }
-                )
-                .padding(.horizontal, 0)
-                .padding(.vertical, 4)
-                .padding(.leading, 12)
-                
-                // 模板库折叠菜单
-                DisclosureGroup(
-                    isExpanded: $showTemplateLibrary,
-                    content: {
-                        VStack(spacing: 12) {
-                            // 模板目录状态和选择区域
-                            VStack(spacing: 8) {
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("模板目录")
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                        
-                                        if isTemplatefolderConfigured, let path = templateFolderPath {
-                                            Text(path)
-                                                .font(.caption)
-                                                .foregroundColor(.primary)
-                                                .lineLimit(1)
-                                                .truncationMode(.middle)
-                                        } else {
-                                            Text("未选择模板目录")
-                                                .font(.caption)
-                                                .foregroundColor(.orange)
-                                        }
-                                    }
-                                    
-                                    Spacer()
-                                    
-                                    // 选择/更改目录按钮
-                                    Button(action: {
-                                        TemplateManager.selectTemplateFolderForUI { success in
-                                            if success {
-                                                updateTemplateFolderStatus()
-                                            }
-                                        }
-                                    }) {
-                                        Text(isTemplatefolderConfigured ? "更改" : "选择")
-                                            .font(.caption)
-                                    }
-                                    .buttonStyle(.bordered)
-                                    .controlSize(.mini)
-                                }
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 8)
-                                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
-                            }
+                            .help("添加新模板")
                             
-                            // 模板列表或提示
-                            if !isTemplatefolderConfigured {
-                                // 未配置目录的提示
-                                VStack(spacing: 16) {
-                                    Image(systemName: "folder.badge.questionmark")
-                                        .font(.system(size: 48))
-                                        .foregroundColor(.secondary)
-                                    
-                                    VStack(spacing: 8) {
-                                        Text("需要选择模板目录")
-                                            .font(.title2)
-                                            .foregroundColor(.primary)
-                                        
-                                        Text("请先选择一个文件夹作为模板存储位置，然后就可以添加和使用模板文件了。")
-                                            .font(.callout)
-                                            .foregroundColor(.secondary)
-                                            .multilineTextAlignment(.center)
-                                            .padding(.horizontal, 20)
-                                    }
-                                    
-                                    Button(action: {
-                                        TemplateManager.initializeTemplateFolder()
-                                        updateTemplateFolderStatus()
-                                    }) {
-                                        Label("选择模板目录", systemImage: "folder.badge.plus")
-                                    }
-                                    .buttonStyle(.borderedProminent)
-                                    .controlSize(.large)
-                                }
-                                .frame(maxWidth: .infinity, alignment: .center)
-                                .padding(.vertical, 32)
-                            } else if viewModel.templates.isEmpty {
-                                // 已配置目录但无模板的提示
-                                VStack(alignment: .center, spacing: 16) {
-                                    Image(systemName: "doc.badge.plus")
-                                        .font(.system(size: 48))
-                                        .foregroundColor(.secondary)
-                                    Text("暂无模板文件")
-                                        .font(.title2)
-                                        .foregroundColor(.secondary)
-                                    VStack(spacing: 4) {
-                                        Text("点击上方 + 按钮添加模板文件")
-                                            .font(.callout)
-                                            .foregroundColor(.secondary)
-                                        Text("或直接将文件拖拽到模板目录中")
-                                            .font(.caption)
-                                            .foregroundColor(.secondary.opacity(0.7))
-                                    }
-                                }
-                                .frame(maxWidth: .infinity, alignment: .center)
-                                .padding(.vertical, 32)
-                            } else {
-                                // 模板列表
-                                List(viewModel.templates, id: \.id, selection: $selectedTemplate) { template in
-                                    HStack(spacing: 12) {
-                                        Image(systemName: template.iconName ?? "doc")
-                                            .foregroundColor(.accentColor)
-                                            .frame(width: 20)
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            Text(template.displayName)
-                                                .font(.system(.body, design: .rounded))
-                                                .foregroundColor(.primary)
-                                            Text(template.fileName)
-                                                .font(.caption)
-                                                .foregroundColor(.secondary)
-                                        }
-                                        Spacer()
-                                        
-                                        // 删除按钮
-                                        Button(action: {
-                                            templateToDelete = template
-                                            showingDeleteAlert = true
-                                        }) {
-                                            Image(systemName: "trash")
-                                                .foregroundColor(.red)
-                                                .font(.system(size: 14))
-                                        }
-                                        .buttonStyle(.borderless)
-                                        .help("删除模板")
-                                    }
-                                    .contentShape(Rectangle())
-                                }
-                                .frame(minWidth: 180, maxWidth: 320, minHeight: 200, maxHeight: 280)
-                                .frame(maxWidth: .infinity, alignment: .center)
+                            // 刷新按钮
+                            Button(action: {
+                                viewModel.loadTemplates()
+                            }) {
+                                Image(systemName: "arrow.clockwise")
+                                    .foregroundColor(.accentColor)
                             }
-                        }
-                    },
-                    label: {
-                        HStack {
-                            Text("模板库")
-                                .font(.title3)
-                                .fontWeight(.medium)
-                                .foregroundColor(.accentColor)
-                            Spacer()
+                            .buttonStyle(.borderless)
+                            .help("刷新模板列表")
                             
-                            // 只有在配置了目录时才显示添加按钮
-                            if isTemplatefolderConfigured {
-                                Button(action: { showingFilePicker = true }) {
-                                    Image(systemName: "plus")
-                                        .foregroundColor(.accentColor)
-                                }
-                                .buttonStyle(.borderless)
-                                .help("添加新模板")
-                                
-                                // 刷新按钮
-                                Button(action: {
-                                    viewModel.loadTemplates()
-                                }) {
-                                    Image(systemName: "arrow.clockwise")
-                                        .foregroundColor(.accentColor)
-                                }
-                                .buttonStyle(.borderless)
-                                .help("刷新模板列表")
-                                
-                                // 在Finder中显示目录按钮
-                                Button(action: {
-                                    TemplateManager.revealTemplateFolderInFinder()
-                                }) {
-                                    Image(systemName: "folder")
-                                        .foregroundColor(.accentColor)
-                                }
-                                .buttonStyle(.borderless)
-                                .help("在Finder中显示模板目录")
+                            // 在Finder中显示目录按钮
+                            Button(action: {
+                                TemplateManager.revealTemplateFolderInFinder()
+                            }) {
+                                Image(systemName: "folder")
+                                    .foregroundColor(.accentColor)
                             }
+                            .buttonStyle(.borderless)
+                            .help("在Finder中显示模板目录")
                         }
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .padding(.leading, 12)
                     }
-                )
-                .padding(.horizontal, 0)
-                .padding(.vertical, 4)
-                .padding(.leading, 12)
-                
-                Spacer(minLength: 0)
-            }
-            .frame(maxWidth: .infinity)
-            .frame(maxHeight: 600) // 可根据实际需求调整
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .padding(.leading, 12)
+                }
+            )
+            .padding(.horizontal, 0)
+            .padding(.vertical, 4)
+            .padding(.leading, 12)
+            
+            Spacer(minLength: 0)
         }
+        .background(.regularMaterial)
+        .frame(maxWidth: .infinity)
+        .frame(maxHeight: 600) // 可根据实际需求调整
         .fileImporter(
             isPresented: $showingFilePicker,
             allowedContentTypes: [.item],
