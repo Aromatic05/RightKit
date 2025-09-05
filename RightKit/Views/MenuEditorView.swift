@@ -24,7 +24,9 @@ struct MenuEditorView: View {
     }
     
     var body: some View {
-        ScrollView {
+        // 改为 VStack，使底部详情区域可以固定高度而不被上部 ScrollView 拉伸
+        VStack(spacing: 0) {
+            // 上半部分：标题栏 + 菜单树，放在可滚动容器中
             VStack(alignment: .leading, spacing: 0) {
                 // 标题栏
                 HStack {
@@ -110,27 +112,31 @@ struct MenuEditorView: View {
                                     level: 0,
                                     selectedItemId: $viewModel.selectedItemId,
                                     expandedItems: $expandedItems
-                            )
-                            .environmentObject(viewModel)
+                                )
+                                .environmentObject(viewModel)
                             }
                         }
                         .padding(.vertical, 8)
                     }
                 }
-                
-                // 底部详情编辑区域
-                if let selectedId = viewModel.selectedItemId {
-                    Divider()
-                    MenuItemDetailEditor(itemId: selectedId)
-                        .id(selectedId)
-                        .environmentObject(viewModel)
-                        .padding(16)
-                        .background(.regularMaterial)
-                }
             }
             .frame(maxWidth: .infinity)
-            .frame(maxHeight: 600) // 可根据实际需求调整
+            // 让上半部分可伸缩，但不会把底部拉伸溢出
+            .frame(maxHeight: .infinity)
+            
+            // 底部详情编辑区域（固定高度）
+            if let selectedId = viewModel.selectedItemId {
+                Divider()
+                MenuItemDetailEditor(itemId: selectedId)
+                    .id(selectedId)
+                    .environmentObject(viewModel)
+                    .padding(16)
+                    .background(.regularMaterial)
+                    .frame(height: 330) // 固定高度，可根据需要调整
+            }
         }
+        .frame(maxWidth: .infinity)
+        .frame(maxHeight: 800) // 可根据实际需求调整
         .dropDestination(for: TemplateInfo.self) { templates, location in
             // Handle dropping templates from the template library
             for template in templates {
