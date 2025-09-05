@@ -16,6 +16,7 @@ struct ContentView: View {
             TemplateLibraryView()
                 .environmentObject(viewModel)
                 .navigationSplitViewColumnWidth(min: 250, ideal: 300)
+                .frame(alignment: .topLeading)
         } detail: {
             // 右侧面板：菜单编辑器
             MenuEditorView()
