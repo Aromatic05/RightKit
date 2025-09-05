@@ -78,7 +78,7 @@ struct TemplateLibraryView: View {
                     }
                     .listStyle(.sidebar)
                     .background(.regularMaterial)
-                    .frame(minWidth: 180, maxWidth: 320, minHeight: 270, maxHeight: 370)
+                    .frame(minWidth: 180, maxWidth: 320, minHeight: 280, maxHeight: 370)
                     .frame(maxWidth: .infinity, alignment: .center)
                 },
                 label: {
@@ -236,7 +236,7 @@ struct TemplateLibraryView: View {
                             }
                             .listStyle(.sidebar)
                             .background(.regularMaterial)
-                            .frame(minWidth: 180, maxWidth: 320, minHeight: 250, maxHeight: 320)
+                            .frame(minWidth: 180, maxWidth: 320, minHeight: 280, maxHeight: 370)
                             .frame(maxWidth: .infinity, alignment: .center)
                         }
                     }
